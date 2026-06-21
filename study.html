@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyMaster - Premium Study Tracker</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 750: '#1e293b', 850: '#0f172a', 900: '#020617' },
+                        primary: { 500: '#4f46e5', 600: '#4338ca' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js & Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; overflow-x: hidden;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .progress-ring__circle { transition: stroke-dashoffset 0.3s; transform: rotate(-90deg); transform-origin: 50% 50%; }
+
+        .heatmap-grid { display: grid; grid-template-columns: repeat(52, 1fr); grid-template-rows: repeat(7, 1fr); gap: 3px; overflow-x: auto; padding-bottom: 8px; }
+        .heatmap-cell { width: 12px; height: 12px; border-radius: 2px; background-color: #1e293b; transition: all 0.2s; }
+        .heatmap-cell:hover { transform: scale(1.2); z-index: 10; }
+        .heat-1 { background-color: #312e81; } .heat-2 { background-color: #4338ca; } .heat-3 { background-color: #4f46e5; } .heat-4 { background-color: #818cf8; }
+
+        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { min-width: 250px; animation: slideInRight 0.3s forwards, fadeOut 0.5s 4.5s forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        
+        .loader { border: 3px solid rgba(255,255,255,0.1); border-left-color: #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="antialiased h-screen flex overflow-hidden selection:bg-primary-500 selection:text-white">
+
+    <div id="toast-container"></div>
+
+    <!-- App Loading Screen -->
+    <div id="app-loading" class="fixed inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center">
+        <div class="loader w-12 h-12 mb-4"></div>
+        <h2 class="text-xl font-semibold text-white tracking-wide">StudyMaster</h2>
+        <p class="text-slate-400 text-sm mt-2">Initializing workspace...</p>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="modal-confirm" class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass w-full max-w-sm rounded-2xl p-6 border border-slate-700 text-center">
+            <div class="w-12 h-12 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2" id="confirm-title">Are you sure?</h3>
+            <p class="text-sm text-slate-400 mb-6" id="confirm-message">This action cannot be undone.</p>
+            <div class="flex gap-3 justify-center">
+                <button id="confirm-cancel" class="px-4 py-2 rounded-lg text-slate-300 hover:bg-slate-800 transition">Cancel</button>
+                <button id="confirm-ok" class="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition shadow-lg shadow-primary-500/20">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-view" class="fixed inset-0 z-40 bg-slate-900 hidden flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md rounded-2xl p-8">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-primary-500/30">
+                    <i data-lucide="book-open" class="text-white w-8 h-8"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2" id="auth-title">Welcome to StudyMaster</h2>
+                <p class="text-slate-400 text-sm" id="auth-subtitle">Your premium productivity workspace</p>
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Email</label>
+                    <input type="email" id="auth-email" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all" placeholder="name@example.com" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Password</label>
+                    <input type="password" id="auth-password" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-2.5 rounded-lg transition-colors shadow-lg shadow-primary-500/25 mt-4">
+                    Sign In
+                </button>
+                <div class="text-center mt-3">
+                    <button type="button" id="auth-toggle-btn" class="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors">
+                        Don't have an account? Sign Up
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-6 flex items-center justify-center space-x-4">
+                <div class="h-px bg-slate-700 flex-1"></div>
+                <span class="text-slate-400 text-sm">or</span>
+                <div class="h-px bg-slate-700 flex-1"></div>
+            </div>
+
+            <button id="btn-google-login" class="w-full mt-6 bg-white hover:bg-gray-100 text-slate-900 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.58c2.08-1.92 3.27-4.74 3.27-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.58-2.77c-.98.66-2.23 1.06-3.7 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Continue with Google
+            </button>
+
+            <button id="btn-guest-login" class="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 rounded-lg transition-colors border border-slate-700">
+                Continue as Guest
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Wrapper -->
+    <div id="main-app" class="flex w-full h-full hidden">
+        
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 bg-slate-850/80 backdrop-blur-xl border-r border-slate-800 flex flex-col justify-between hidden md:flex transition-all">
+            <div>
+                <!-- Logo -->
+                <div class="h-16 flex items-center px-6 border-b border-slate-800">
+                    <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-primary-500/20">
+                        <i data-lucide="book-open" class="text-white w-4 h-4"></i>
+                    </div>
+                    <span class="text-white font-bold tracking-wide text-lg">StudyMaster</span>
+                </div>
+                
+                <!-- Nav Links -->
+                <div class="px-4 py-6 space-y-1" id="nav-links">
+                    <button data-target="view-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all bg-slate-800 text-white">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+                    </button>
+                    <button data-target="view-timer" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                        <i data-lucide="timer" class="w-5 h-5"></i> Study Timer
+                    </button>
+                    <button data-target="view-calendar" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                        <i data-lucide="calendar" class="w-5 h-5"></i> Calendar
+                    </button>
+                    <button data-target="view-subjects" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                        <i data-lucide="library" class="w-5 h-5"></i> Subjects
+                    </button>
+                    <button data-target="view-analytics" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                        <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Analytics
+                    </button>
+                    <button data-target="view-history" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                        <i data-lucide="history" class="w-5 h-5"></i> History
+                    </button>
+                </div>
+            </div>
+
+            <!-- User Profile Snippet -->
+            <div class="p-4 border-t border-slate-800">
+                <button data-target="view-settings" class="nav-btn w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-800 transition-colors group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold" id="user-avatar-initials">U</div>
+                        <div class="text-left">
+                            <p class="text-sm font-medium text-white group-hover:text-primary-400 transition-colors" id="nav-user-name">User Name</p>
+                            <p class="text-xs text-slate-400">Pro Plan</p>
+                        </div>
+                    </div>
+                    <i data-lucide="settings" class="w-4 h-4 text-slate-400 group-hover:text-white"></i>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden relative">
+            
+            <!-- Topbar -->
+            <header class="h-16 flex items-center justify-between px-6 border-b border-slate-800 glass z-10 sticky top-0">
+                <div class="flex items-center gap-4">
+                    <button class="md:hidden text-slate-300 hover:text-white" onclick="document.querySelector('nav').classList.toggle('hidden')">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <h1 class="text-lg font-semibold text-white hidden sm:block" id="topbar-title">Dashboard</h1>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Exam Countdown Widget -->
+                    <div class="hidden lg:flex items-center gap-2 glass px-3 py-1.5 rounded-full border border-slate-700/50">
+                        <i data-lucide="clock" class="w-4 h-4 text-primary-400"></i>
+                        <span class="text-xs font-medium text-slate-300">Exam in: <span id="exam-countdown" class="text-white font-bold">Not Set</span></span>
+                    </div>
+
+                    <button class="p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-slate-800" onclick="document.documentElement.classList.toggle('dark')">
+                        <i data-lucide="sun-moon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Views Container -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth" id="views-container">
+                
+                <section id="view-dashboard" class="view-section active space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h2 class="text-2xl font-bold text-white">Welcome back, <span id="dash-user-name" class="text-primary-400">User</span> 👋</h2>
+                                <div class="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm rounded-full font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(234,179,8,0.1)]">
+                                    <i data-lucide="star" class="w-4 h-4 text-yellow-400"></i> <span id="dash-score">0 / 0</span> pts
+                                </div>
+                            </div>
+                            <p class="text-slate-400 mt-1">Here is your study overview for today.</p>
+                        </div>
+                        <button class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-primary-500/20" onclick="switchView('view-timer')">
+                            <i data-lucide="play" class="w-4 h-4"></i> Start Session
+                        </button>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="glass p-5 rounded-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400"><i data-lucide="clock"></i></div>
+                            </div>
+                            <h3 class="text-slate-400 text-sm font-medium">Today's Study</h3>
+                            <p class="text-2xl font-bold text-white mt-1" id="stat-today">0h 0m</p>
+                        </div>
+                        <div class="glass p-5 rounded-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400"><i data-lucide="calendar-days"></i></div>
+                            </div>
+                            <h3 class="text-slate-400 text-sm font-medium">Weekly Hours</h3>
+                            <p class="text-2xl font-bold text-white mt-1" id="stat-week">0h 0m</p>
+                        </div>
+                        <div class="glass p-5 rounded-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-2 bg-orange-500/10 rounded-lg text-orange-400"><i data-lucide="flame"></i></div>
+                                <span class="text-xs font-medium text-slate-400 bg-slate-800 px-2 py-1 rounded-full">Max: <span id="stat-max-streak">0</span></span>
+                            </div>
+                            <h3 class="text-slate-400 text-sm font-medium">Current Streak</h3>
+                            <p class="text-2xl font-bold text-white mt-1"><span id="stat-streak">0</span> Days</p>
+                        </div>
+                        <div class="glass p-5 rounded-2xl">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400"><i data-lucide="target"></i></div>
+                            </div>
+                            <h3 class="text-slate-400 text-sm font-medium">Goal Progress</h3>
+                            <div class="flex items-center gap-3 mt-1">
+                                <div class="flex-1 bg-slate-800 rounded-full h-2">
+                                    <div class="bg-emerald-500 h-2 rounded-full transition-all" id="stat-goal-bar" style="width: 0%"></div>
+                                </div>
+                                <span class="text-lg font-bold text-white" id="stat-goal-pct">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                        <!-- Recent Activity -->
+                        <div class="glass rounded-2xl p-6 lg:col-span-2">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold text-white">Recent Sessions</h3>
+                                <button class="text-sm text-primary-400 hover:text-primary-300" onclick="switchView('view-history')">View All</button>
+                            </div>
+                            <div class="space-y-4" id="recent-sessions-list">
+                                <p class="text-slate-400 text-sm">No recent sessions found.</p>
+                            </div>
+                        </div>
+
+                        <!-- Achievements -->
+                        <div class="glass rounded-2xl p-6">
+                            <h3 class="font-semibold text-white mb-4">Achievements</h3>
+                            <div class="space-y-3" id="badges-container">
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50" id="badge-first">
+                                    <div class="text-2xl opacity-50 grayscale" id="icon-first">🥉</div>
+                                    <div>
+                                        <p class="text-sm font-medium text-white">First Session</p>
+                                        <p class="text-xs text-slate-400">Complete 1st study block</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50" id="badge-streak">
+                                    <div class="text-2xl opacity-50 grayscale" id="icon-streak">🔥</div>
+                                    <div>
+                                        <p class="text-sm font-medium text-white">7 Day Streak</p>
+                                        <p class="text-xs text-slate-400">Study for 7 days straight</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-timer" class="view-section">
+                    <div class="max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
+                        
+                        <!-- Mode Selector -->
+                        <div class="flex bg-slate-800 p-1 rounded-lg mb-8 overflow-x-auto max-w-full">
+                            <button id="mode-pomodoro" class="px-6 py-2 rounded-md text-sm font-medium bg-primary-600 text-white shadow transition whitespace-nowrap">Pomodoro</button>
+                            <button id="mode-shortbreak" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Short Break</button>
+                            <button id="mode-longbreak" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Long Break</button>
+                            <button id="mode-custom" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Custom Goal</button>
+                            <button id="mode-stopwatch" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Stopwatch</button>
+                        </div>
+
+                        <!-- Circular Timer -->
+                        <div class="relative w-72 h-72 mb-10 flex items-center justify-center">
+                            <svg class="w-full h-full transform" viewBox="0 0 100 100">
+                                <circle class="text-slate-800 stroke-current" stroke-width="4" cx="50" cy="50" r="45" fill="transparent"></circle>
+                                <circle id="timer-ring" class="text-primary-500 progress-ring__circle stroke-current" stroke-width="4" stroke-linecap="round" cx="50" cy="50" r="45" fill="transparent" stroke-dasharray="283" stroke-dashoffset="0"></circle>
+                            </svg>
+                            <div class="absolute flex flex-col items-center">
+                                <span id="timer-display" class="text-6xl font-bold text-white tracking-tight font-mono">25:00</span>
+                                <span id="timer-status" class="text-sm text-primary-400 mt-2 font-medium">Focus Time</span>
+                            </div>
+                        </div>
+
+                        <!-- Controls -->
+                        <div class="flex items-center gap-4 mb-10">
+                            <button id="timer-start" class="w-16 h-16 bg-primary-600 hover:bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105">
+                                <i data-lucide="play" class="w-6 h-6 ml-1"></i>
+                            </button>
+                            <button id="timer-pause" class="w-16 h-16 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white hidden transition-transform hover:scale-105">
+                                <i data-lucide="pause" class="w-6 h-6"></i>
+                            </button>
+                            <button id="timer-end" class="px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-medium transition-colors hidden">
+                                End Session
+                            </button>
+                        </div>
+
+                        <!-- Session Details Input -->
+                        <div class="w-full max-w-md glass p-6 rounded-2xl space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Subject / Topic</label>
+                                    <select id="timer-subject" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none appearance-none">
+                                        <option value="General Study">General Study</option>
+                                        <!-- Dynamic Subjects injected here -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Goal (Hours)</label>
+                                    <input type="number" id="timer-custom-hours" step="0.5" min="0.1" value="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Session Notes (Optional)</label>
+                                <textarea id="timer-notes" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none resize-none" placeholder="What are you working on?"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-calendar" class="view-section">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        
+                        <!-- Main Calendar -->
+                        <div class="flex-1 glass p-6 rounded-2xl">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-white" id="calendar-month-year">June 2026</h2>
+                                <div class="flex gap-2">
+                                    <button class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition" onclick="changeMonth(-1)">
+                                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                                    </button>
+                                    <button class="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition" onclick="changeMonth(1)">
+                                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Days Header -->
+                            <div class="grid grid-cols-7 gap-2 mb-2 text-center">
+                                <div class="text-sm font-medium text-slate-400">Sun</div>
+                                <div class="text-sm font-medium text-slate-400">Mon</div>
+                                <div class="text-sm font-medium text-slate-400">Tue</div>
+                                <div class="text-sm font-medium text-slate-400">Wed</div>
+                                <div class="text-sm font-medium text-slate-400">Thu</div>
+                                <div class="text-sm font-medium text-slate-400">Fri</div>
+                                <div class="text-sm font-medium text-slate-400">Sat</div>
+                            </div>
+                            
+                            <!-- Grid -->
+                            <div class="grid grid-cols-7 gap-2" id="calendar-grid-days">
+                                <!-- Populated via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Daily Analysis Side Panel -->
+                        <div class="w-full lg:w-96 glass p-6 rounded-2xl flex flex-col h-full min-h-[500px]">
+                            <div class="border-b border-slate-700 pb-4 mb-4">
+                                <h3 class="text-lg font-bold text-white" id="analysis-date-display">Select a Date</h3>
+                                <p class="text-sm text-slate-400 mt-1">Total Studied: <span id="analysis-hours" class="text-primary-400 font-bold">0h 0m</span></p>
+                            </div>
+
+                            <div class="flex justify-between items-center mb-3 mt-2">
+                                <h4 class="text-sm font-medium text-slate-300 uppercase tracking-wider">Planned Tasks</h4>
+                                <button id="btn-add-task-cal" onclick="openTaskModal()" class="text-xs bg-primary-600 hover:bg-primary-500 text-white px-2 py-1 rounded flex items-center gap-1 transition">
+                                    <i data-lucide="plus" class="w-3 h-3"></i> Add
+                                </button>
+                            </div>
+                            <div class="space-y-2 mb-6" id="analysis-tasks-list">
+                                <!-- Populated via JS -->
+                                <p class="text-sm text-slate-500 italic">No tasks planned for this day.</p>
+                            </div>
+
+                            <h4 class="text-sm font-medium text-slate-300 uppercase tracking-wider mb-3">Study Sessions</h4>
+                            <div class="space-y-2 flex-1 overflow-y-auto" id="analysis-sessions-list">
+                                <!-- Populated via JS -->
+                                <p class="text-sm text-slate-500 italic">No sessions completed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-subjects" class="view-section">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white mb-1">Subjects & Goals</h2>
+                            <p class="text-slate-400 text-sm">Manage your study curriculum and track individual subject progress.</p>
+                        </div>
+                        <button onclick="openSubjectModal()" class="bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow-lg shadow-primary-500/20">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Add Subject
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="subjects-container">
+                        <!-- Rendered by JS -->
+                        <div class="col-span-full text-center py-12 glass rounded-2xl">
+                            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i data-lucide="library" class="text-slate-400 w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-white">No Subjects Added</h3>
+                            <p class="text-slate-400 mt-1 mb-4">Start organizing your studies by adding your first subject.</p>
+                            <button onclick="openSubjectModal()" class="text-primary-400 hover:text-primary-300 font-medium">Add Subject</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-analytics" class="view-section">
+                    <h2 class="text-2xl font-bold text-white mb-6">Analytics & Insights</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="text-sm font-medium text-slate-400 mb-4 uppercase tracking-wider">Study Hours (Last 7 Days)</h3>
+                            <div class="h-64 relative"><canvas id="chart-bar-weekly"></canvas></div>
+                        </div>
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="text-sm font-medium text-slate-400 mb-4 uppercase tracking-wider">Subject Distribution</h3>
+                            <div class="h-64 relative flex justify-center"><canvas id="chart-pie-subjects"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl mb-6">
+                        <h3 class="text-sm font-medium text-slate-400 mb-4 uppercase tracking-wider">Monthly Growth Line</h3>
+                        <div class="h-64 relative"><canvas id="chart-line-monthly"></canvas></div>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl overflow-hidden">
+                        <h3 class="text-sm font-medium text-slate-400 mb-4 uppercase tracking-wider">Study Consistency (365 Days)</h3>
+                        <div class="flex items-center gap-2 mb-2 text-xs text-slate-500 justify-end">
+                            <span>Less</span>
+                            <div class="w-3 h-3 bg-slate-800 rounded-sm"></div>
+                            <div class="w-3 h-3 heat-1 rounded-sm"></div>
+                            <div class="w-3 h-3 heat-2 rounded-sm"></div>
+                            <div class="w-3 h-3 heat-3 rounded-sm"></div>
+                            <div class="w-3 h-3 heat-4 rounded-sm"></div>
+                            <span>More</span>
+                        </div>
+                        <div class="w-full overflow-x-auto pb-2">
+                            <div id="heatmap-container" class="heatmap-grid min-w-[800px]"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-history" class="view-section">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <h2 class="text-2xl font-bold text-white">Study History</h2>
+                        <div class="flex gap-2 w-full md:w-auto">
+                            <input type="text" id="history-search" placeholder="Search notes..." class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-primary-500 outline-none w-full md:w-64">
+                            <select id="history-filter" class="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:ring-2 focus:ring-primary-500 outline-none max-w-[150px] truncate">
+                                <option value="all">All Subjects</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-2xl overflow-hidden border border-slate-700">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr class="bg-slate-800/50 border-b border-slate-700 text-slate-400 text-xs uppercase tracking-wider">
+                                        <th class="p-4 font-medium">Date & Time</th>
+                                        <th class="p-4 font-medium">Subject</th>
+                                        <th class="p-4 font-medium">Duration</th>
+                                        <th class="p-4 font-medium">Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body" class="divide-y divide-slate-700/50">
+                                    <!-- JS Populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="history-empty" class="p-8 text-center text-slate-400 hidden">
+                            No study sessions found matching criteria.
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-settings" class="view-section max-w-3xl">
+                    <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
+                    
+                    <div class="space-y-6">
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="text-lg font-medium text-white mb-4 border-b border-slate-700 pb-2">Profile</h3>
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-primary-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold" id="settings-avatar">U</div>
+                                <div>
+                                    <input type="text" id="settings-name" class="bg-transparent border-b border-slate-700 text-white text-lg font-medium focus:border-primary-500 outline-none px-1 py-1" value="User Name">
+                                    <p class="text-slate-400 text-sm mt-1" id="settings-email">user@example.com</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="text-lg font-medium text-white mb-4 border-b border-slate-700 pb-2">Study Goals</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Daily Goal (Hours)</label>
+                                    <input type="number" id="settings-daily-goal" value="4" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-slate-400 mb-1">Weekly Goal (Hours)</label>
+                                    <input type="number" id="settings-weekly-goal" value="20" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white">
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="block text-sm text-slate-400 mb-1">Target Exam Date</label>
+                                <input type="date" id="settings-exam-date" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white style-color-scheme-dark">
+                            </div>
+                        </div>
+
+                        <div class="glass p-6 rounded-2xl">
+                            <h3 class="text-lg font-medium text-white mb-4 border-b border-slate-700 pb-2">Preferences</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-300">Sound Notifications</span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="settings-sound" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-4">
+                            <button id="btn-save-settings" class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2.5 rounded-lg font-medium transition shadow-lg shadow-primary-500/20">Save Changes</button>
+                            <button id="btn-logout" class="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-6 py-2.5 rounded-lg font-medium transition">Sign Out</button>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="modal-add-task" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md rounded-2xl p-6 border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">Add Planner Task</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-add-task" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Date</label>
+                    <input type="date" id="task-date" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white style-color-scheme-dark">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-400 mb-1">Subject</label>
+                    <select id="task-subject" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                        <option value="General Study">General Study</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Goal (Hours)</label>
+                        <input type="number" id="task-hours" step="0.5" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white" value="1">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Priority</label>
+                        <select id="task-priority" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                            <option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-2.5 rounded-lg mt-4 transition">Add Task</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Subject Modal -->
+    <div id="modal-add-subject" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass w-full max-w-md rounded-2xl p-6 border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">Add Tracking Subject</h3>
+                <button onclick="closeSubjectModal()" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="form-add-subject" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Subject Name</label>
+                    <input type="text" id="subject-name" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:ring-2 focus:ring-primary-500" placeholder="e.g. System Design">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-400 mb-1">Target Study Hours</label>
+                    <input type="number" id="subject-target" step="1" required class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:ring-2 focus:ring-primary-500" value="40">
+                </div>
+                <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-medium py-2.5 rounded-lg mt-4 transition shadow-lg shadow-primary-500/20">Save Subject</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subject Analytics Modal -->
+    <div id="modal-subject-analytics" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="glass w-full max-w-4xl rounded-2xl p-6 border border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-white" id="sa-title">Subject Details</h3>
+                <button onclick="closeSubjectAnalyticsModal()" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                    <p class="text-sm text-slate-400 mb-1 uppercase tracking-wider">Total Time Spent</p>
+                    <p class="text-2xl font-bold text-white" id="sa-total-time">0h 0m</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                    <p class="text-sm text-slate-400 mb-1 uppercase tracking-wider">Max Daily Study</p>
+                    <p class="text-2xl font-bold text-emerald-400" id="sa-max-time">0h 0m</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+                    <p class="text-sm text-slate-400 mb-1 uppercase tracking-wider">Min Daily Study</p>
+                    <p class="text-2xl font-bold text-orange-400" id="sa-min-time">0h 0m</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-white" id="sa-month-year">June 2026</h4>
+                        <div class="flex gap-2">
+                            <button class="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded transition" onclick="changeSAMonth(-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                            <button class="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded transition" onclick="changeSAMonth(1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center mb-1">
+                        <div class="text-xs font-medium text-slate-400">Su</div><div class="text-xs font-medium text-slate-400">Mo</div><div class="text-xs font-medium text-slate-400">Tu</div><div class="text-xs font-medium text-slate-400">We</div><div class="text-xs font-medium text-slate-400">Th</div><div class="text-xs font-medium text-slate-400">Fr</div><div class="text-xs font-medium text-slate-400">Sa</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1" id="sa-calendar-grid"></div>
+                </div>
+
+                <div class="w-full md:w-72 bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
+                    <h4 class="font-bold text-white mb-2" id="sa-selected-date">Select a Date</h4>
+                    <p class="text-sm text-slate-400 mb-4" id="sa-day-total">Total: 0m</p>
+                    <div class="space-y-2 overflow-y-auto max-h-[200px]" id="sa-day-sessions">
+                        <p class="text-sm text-slate-500 italic">No sessions.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- STATE MANAGEMENT ---
+        const state = {
+            sessions: [],
+            planner: [], 
+            subjects: [], 
+            settings: {
+                dailyGoal: 4, weeklyGoal: 20, examDate: '', soundEnabled: true, name: 'User'
+            },
+            timer: {
+                interval: null, timeLeft: 25 * 60, mode: 'pomodoro', isRunning: false, 
+                accumulatedSeconds: 0
+            },
+            calendar: {
+                currentDate: new Date(),
+                selectedDate: new Date()
+            },
+            unsubscribers: []
+        };
+
+        // --- UTILITY & SOUND ---
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = { success: 'bg-emerald-500', error: 'bg-red-500', info: 'bg-primary-500', warning: 'bg-orange-500' };
+            toast.className = `toast flex items-center p-4 rounded-xl text-white shadow-xl ${colors[type] || colors.info} backdrop-blur-md bg-opacity-90`;
+            toast.innerHTML = `<span class="text-sm font-medium">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { if(toast.parentNode) toast.remove(); }, 5000);
+            
+            if(state.settings.soundEnabled) playSound(type === 'error' ? 'error' : 'pop');
+        };
+
+        const playSound = (type = 'pop') => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                if(type === 'ding') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime);
+                    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+                    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1);
+                } else {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
+                }
+            } catch(e) {}
+        };
+
+        // --- CUSTOM CONFIRM MODAL ---
+        window.showConfirm = (title, message, onConfirm) => {
+            const modal = document.getElementById('modal-confirm');
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            
+            const cancelBtn = document.getElementById('confirm-cancel');
+            const okBtn = document.getElementById('confirm-ok');
+            
+            const close = () => modal.classList.add('hidden');
+            
+            cancelBtn.onclick = close;
+            okBtn.onclick = () => { close(); onConfirm(); };
+            
+            modal.classList.remove('hidden');
+        };
+
+        const getFirebasePath = (col) => collection(db, 'artifacts', appId, 'users', currentUser.uid, col);
+
+        // --- STREAMING_CHUNK:Setting up Firebase Config and Auth Flow... ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'studymaster-app';
+        const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUC5TO-u-XvKtj25gUzmF-A4U3C3_rFVw",
+            authDomain: "study-tracker-282e2.firebaseapp.com",
+            projectId: "study-tracker-282e2",
+            storageBucket: "study-tracker-282e2.firebasestorage.app",
+            messagingSenderId: "1091617050976",
+            appId: "1:1091617050976:web:14e7ef02a48af411478e05"
+        };
+
+        let app, auth, db, currentUser = null;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            setTimeout(() => {
+                document.getElementById('app-loading').classList.add('hidden');
+                document.getElementById('auth-view').classList.remove('hidden');
+            }, 500);
+        }
+
+        const initAuthFlow = async () => {
+            if (!auth) return;
+            if (customToken) {
+                try {
+                    await signInWithCustomToken(auth, customToken);
+                } catch (tokenError) {
+                    console.warn("Token mismatch. Fallback to normal login UI.");
+                }
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-view').classList.add('hidden');
+                document.getElementById('app-loading').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                const emailStr = user.isAnonymous ? 'Guest User' : (user.email || 'User');
+                document.getElementById('nav-user-name').innerText = emailStr.split('@')[0];
+                document.getElementById('dash-user-name').innerText = emailStr.split('@')[0];
+                document.getElementById('user-avatar-initials').innerText = emailStr.charAt(0).toUpperCase();
+                
+                await loadUserData();
+                setupRealtimeListeners();
+                updateAllUI();
+                lucide.createIcons();
+            } else {
+                currentUser = null;
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('app-loading').classList.add('hidden');
+                document.getElementById('auth-view').classList.remove('hidden');
+            }
+        });
+
+        // Toggle Sign In / Sign Up Mode
+        let isSignUpMode = false;
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const authToggleBtn = document.getElementById('auth-toggle-btn');
+
+        if (authToggleBtn) {
+            authToggleBtn.addEventListener('click', () => {
+                isSignUpMode = !isSignUpMode;
+                if (isSignUpMode) {
+                    authTitle.innerText = "Create an Account";
+                    authSubtitle.innerText = "Start your productivity journey";
+                    authSubmitBtn.innerText = "Sign Up";
+                    authToggleBtn.innerText = "Already have an account? Sign In";
+                } else {
+                    authTitle.innerText = "Welcome to StudyMaster";
+                    authSubtitle.innerText = "Your premium productivity workspace";
+                    authSubmitBtn.innerText = "Sign In";
+                    authToggleBtn.innerText = "Don't have an account? Sign Up";
+                }
+            });
+        }
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const em = document.getElementById('auth-email').value;
+            const pw = document.getElementById('auth-password').value;
+            
+            if (pw.length < 6) return showToast("Password must be at least 6 characters.", "warning");
+
+            try {
+                if (isSignUpMode) {
+                    await createUserWithEmailAndPassword(auth, em, pw);
+                    showToast("Account created successfully!", "success");
+                } else {
+                    await signInWithEmailAndPassword(auth, em, pw);
+                    showToast("Welcome back!", "success");
+                }
+            } catch (err) {
+                let msg = err.message;
+                if (err.code === 'auth/invalid-credential') msg = "Invalid email or password.";
+                if (err.code === 'auth/email-already-in-use') msg = "An account with this email already exists.";
+                showToast(msg, "error");
+            }
+        });
+
+        const btnGoogleLogin = document.getElementById('btn-google-login');
+        if (btnGoogleLogin) {
+            btnGoogleLogin.addEventListener('click', async () => {
+                try {
+                    const provider = new GoogleAuthProvider();
+                    await signInWithPopup(auth, provider);
+                    showToast("Signed in with Google", "success");
+                } catch(e) { showToast("Google sign in failed or was cancelled.", "error"); }
+            });
+        }
+
+        document.getElementById('btn-guest-login').addEventListener('click', async () => {
+            try { await signInAnonymously(auth); } catch(e) { showToast("Guest login failed", "error"); }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            clearUnsubscribers(); signOut(auth);
+        });
+
+        // --- STREAMING_CHUNK:Firebase Sync Logic... ---
+        const loadUserData = async () => {
+            try {
+                const settingsRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile');
+                const docSnap = await getDoc(settingsRef);
+                if (docSnap.exists()) state.settings = { ...state.settings, ...docSnap.data() };
+                else await setDoc(settingsRef, state.settings);
+            } catch (e) { console.warn("Load data error:", e); }
+        };
+
+        const setupRealtimeListeners = () => {
+            clearUnsubscribers();
+            
+            const unsubS = onSnapshot(query(getFirebasePath('sessions')), (snapshot) => {
+                state.sessions = [];
+                snapshot.forEach(doc => state.sessions.push({ id: doc.id, ...doc.data() }));
+                state.sessions.sort((a,b) => new Date(b.date) - new Date(a.date));
+                updateDashboard(); renderHistory(); updateCharts(); renderSubjects(); renderDailyAnalysis(); renderCalendar();
+            });
+            
+            const unsubP = onSnapshot(query(getFirebasePath('planner')), (snapshot) => {
+                state.planner = [];
+                snapshot.forEach(doc => state.planner.push({ id: doc.id, ...doc.data() }));
+                renderCalendar(); renderDailyAnalysis();
+            });
+
+            const unsubSub = onSnapshot(query(getFirebasePath('subjects')), (snapshot) => {
+                state.subjects = [];
+                snapshot.forEach(doc => state.subjects.push({ id: doc.id, ...doc.data() }));
+                updateSubjectDropdowns(); renderSubjects();
+            });
+
+            state.unsubscribers.push(unsubS, unsubP, unsubSub);
+        };
+
+        const clearUnsubscribers = () => {
+            state.unsubscribers.forEach(unsub => unsub());
+            state.unsubscribers = [];
+        };
+
+        const updateSubjectDropdowns = () => {
+            const selects = [document.getElementById('timer-subject'), document.getElementById('task-subject')];
+            const filter = document.getElementById('history-filter');
+            
+            let html = `<option value="General Study">General Study</option>`;
+            let fHtml = `<option value="all">All Subjects</option><option value="General Study">General Study</option>`;
+            
+            state.subjects.forEach(sub => {
+                html += `<option value="${sub.name}">${sub.name}</option>`;
+                fHtml += `<option value="${sub.name}">${sub.name}</option>`;
+            });
+            
+            selects.forEach(s => { if(s) s.innerHTML = html; });
+            if(filter) filter.innerHTML = fHtml;
+        };
+
+        // --- STREAMING_CHUNK:UI View Routing Logic... ---
+        window.switchView = (viewId) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target) {
+                    if(btn.dataset.target === viewId) {
+                        btn.classList.add('bg-slate-800', 'text-white'); btn.classList.remove('text-slate-300');
+                    } else {
+                        btn.classList.remove('bg-slate-800', 'text-white'); btn.classList.add('text-slate-300');
+                    }
+                }
+            });
+
+            if(viewId === 'view-analytics') setTimeout(renderCharts, 100);
+            if(viewId === 'view-subjects') renderSubjects();
+            if(viewId === 'view-history') renderHistory();
+            if(viewId === 'view-calendar') { renderCalendar(); renderDailyAnalysis(); }
+
+            const titles = { 'view-dashboard': 'Dashboard', 'view-timer': 'Study Session', 'view-calendar': 'Calendar & Planner', 'view-subjects': 'Subjects & Goals', 'view-analytics': 'Analytics', 'view-history': 'History', 'view-settings': 'Settings' };
+            document.getElementById('topbar-title').innerText = titles[viewId] || 'StudyMaster';
+        };
+
+        document.getElementById('nav-links').addEventListener('click', (e) => {
+            const btn = e.target.closest('.nav-btn');
+            if(btn && btn.dataset.target) switchView(btn.dataset.target);
+        });
+        document.querySelector('[data-target="view-settings"]').addEventListener('click', () => switchView('view-settings'));
+
+        // --- STREAMING_CHUNK:Timer Core Logic & Custom Goals... ---
+        const TIMER_MODES = { pomodoro: 25 * 60, shortbreak: 5 * 60, longbreak: 15 * 60, stopwatch: 0, custom: 60 * 60 };
+        const timerDisplay = document.getElementById('timer-display');
+        const timerRing = document.getElementById('timer-ring');
+        
+        const updateTimerUI = () => {
+            const h = Math.floor(state.timer.timeLeft / 3600);
+            const m = Math.floor((state.timer.timeLeft % 3600) / 60);
+            const s = state.timer.timeLeft % 60;
+            
+            const displayStr = `${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            timerDisplay.innerText = displayStr;
+            
+            if (state.timer.mode === 'stopwatch') {
+                timerRing.style.strokeDashoffset = 0;
+            } else {
+                const total = TIMER_MODES[state.timer.mode];
+                const percent = ((total - state.timer.timeLeft) / total) * 100;
+                timerRing.style.strokeDashoffset = 283 - (percent / 100) * 283;
+            }
+        };
+
+        window.switchTimerMode = (mode) => {
+            if(state.timer.isRunning) return showToast("Pause timer to switch modes", "warning");
+            state.timer.mode = mode; state.timer.timeLeft = TIMER_MODES[mode]; state.timer.accumulatedSeconds = 0;
+            
+            document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
+            
+            const modeBtn = document.getElementById(`mode-${mode}`);
+            if (modeBtn) { modeBtn.classList.remove('text-slate-400'); modeBtn.classList.add('bg-primary-600', 'text-white'); }
+            
+            const statusMap = {pomodoro: 'Focus Time', shortbreak: 'Short Break', longbreak: 'Long Break', stopwatch: 'Stopwatch', custom: 'Custom Goal'};
+            document.getElementById('timer-status').innerText = statusMap[mode] || 'Focus Time';
+            updateTimerUI();
+        };
+        
+        document.getElementById('mode-pomodoro').onclick = () => switchTimerMode('pomodoro');
+        document.getElementById('mode-shortbreak').onclick = () => switchTimerMode('shortbreak');
+        document.getElementById('mode-longbreak').onclick = () => switchTimerMode('longbreak');
+        document.getElementById('mode-custom').onclick = () => switchTimerMode('custom');
+        document.getElementById('mode-stopwatch').onclick = () => switchTimerMode('stopwatch');
+
+        document.getElementById('timer-subject').addEventListener('change', (e) => {
+            const subject = e.target.value;
+            let hours = 1;
+            
+            if (subject !== 'General Study') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
+                if (plannedTask) hours = plannedTask.hours;
+            }
+            
+            document.getElementById('timer-custom-hours').value = hours;
+            TIMER_MODES['custom'] = Math.floor(hours * 3600);
+            
+            if (!state.timer.isRunning) switchTimerMode('custom');
+        });
+
+        document.getElementById('timer-custom-hours').addEventListener('input', (e) => {
+            const hours = parseFloat(e.target.value) || 0;
+            if (hours > 0) {
+                TIMER_MODES['custom'] = Math.floor(hours * 3600);
+                if (state.timer.mode === 'custom' && !state.timer.isRunning) {
+                    state.timer.timeLeft = TIMER_MODES['custom'];
+                    updateTimerUI();
+                }
+            }
+        });
+
+        window.startTaskSession = (subject, hours) => {
+            if(state.timer.isRunning) return showToast("Please pause current timer to switch tasks.", "warning");
+            
+            switchView('view-timer');
+            
+            const subjectSelect = document.getElementById('timer-subject');
+            if (Array.from(subjectSelect.options).some(opt => opt.value === subject)) {
+                subjectSelect.value = subject;
+            } else {
+                subjectSelect.value = 'General Study'; 
+            }
+
+            document.getElementById('timer-custom-hours').value = hours;
+            TIMER_MODES['custom'] = Math.floor(hours * 3600);
+            switchTimerMode('custom');
+            showToast(`Ready to focus on ${subject} for ${hours}h!`, "info");
+        };
+
+        const tick = () => {
+            if (state.timer.mode === 'stopwatch') {
+                state.timer.timeLeft++; state.timer.accumulatedSeconds++;
+            } else {
+                if (state.timer.timeLeft > 0) { state.timer.timeLeft--; state.timer.accumulatedSeconds++; } 
+                else {
+                    window.stopTimer(); playSound('ding'); 
+                    if (state.timer.mode === 'pomodoro' || state.timer.mode === 'custom') {
+                        saveSession(true);
+                    } else {
+                        showToast("Break complete!", "success");
+                    }
+                    return;
+                }
+            }
+            updateTimerUI();
+        };
+
+        window.startTimer = () => {
+            if(!state.timer.isRunning) {
+                state.timer.isRunning = true;
+                state.timer.interval = setInterval(tick, 1000);
+                document.getElementById('timer-start').classList.add('hidden');
+                document.getElementById('timer-pause').classList.remove('hidden');
+                document.getElementById('timer-end').classList.remove('hidden');
+            }
+        };
+
+        window.stopTimer = () => {
+            clearInterval(state.timer.interval);
+            state.timer.isRunning = false;
+            document.getElementById('timer-start').classList.remove('hidden');
+            document.getElementById('timer-pause').classList.add('hidden');
+        };
+
+        // --- STREAMING_CHUNK:Firebase Save Session & Point System... ---
+        const saveSession = async (isCompleted = true) => {
+            if (!currentUser) return;
+            const durationMins = Math.floor(state.timer.accumulatedSeconds / 60);
+            if (durationMins < 1) { showToast("Session too short to save.", "warning"); return resetTimer(); }
+
+            const data = {
+                date: new Date().toISOString(),
+                duration: durationMins,
+                subject: document.getElementById('timer-subject').value,
+                notes: document.getElementById('timer-notes').value,
+                mode: state.timer.mode,
+                completed: isCompleted // Points marker
+            };
+
+            try {
+                await addDoc(getFirebasePath('sessions'), data);
+                showToast(`Saved ${durationMins}m of study! ${isCompleted ? '+5 Points' : '-5 Points'}`, isCompleted ? "success" : "warning");
+                resetTimer();
+            } catch(e) { showToast("Failed to save session.", "error"); }
+        };
+
+        const resetTimer = () => {
+            window.stopTimer(); switchTimerMode(state.timer.mode);
+            document.getElementById('timer-end').classList.add('hidden');
+            document.getElementById('timer-notes').value = '';
+        };
+
+        document.getElementById('timer-start').onclick = startTimer;
+        document.getElementById('timer-pause').onclick = stopTimer;
+        document.getElementById('timer-end').onclick = () => { 
+            stopTimer(); 
+            showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => {
+                saveSession(false);
+            });
+        };
+
+        // --- STREAMING_CHUNK:Updating Dashboard & Score Logic... ---
+        const updateAllUI = () => { updateDashboard(); renderSettings(); updateExamCountdown(); };
+
+        const updateDashboard = () => {
+            const now = new Date();
+            let todayMins = 0, weekMins = 0;
+            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); startOfWeek.setHours(0,0,0,0);
+            const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+
+            let streak = 0, maxStreak = 0, totalPoints = 0, possiblePoints = 0;
+            let currentCheckDate = new Date(startOfToday);
+            const uniqueDates = [...new Set(state.sessions.map(s => new Date(s.date).toDateString()))].map(d => new Date(d)).sort((a,b) => b-a);
+            
+            if(uniqueDates.length > 0) {
+                for(let i=0; i<uniqueDates.length; i++) {
+                    const diffDays = Math.floor((currentCheckDate - uniqueDates[i]) / (1000 * 60 * 60 * 24));
+                    if(diffDays === 0 || diffDays === 1) { streak++; currentCheckDate = uniqueDates[i]; } 
+                    else if (diffDays > 1) break;
+                }
+            }
+            maxStreak = Math.max(streak, state.settings.maxStreak || streak);
+
+            state.sessions.forEach(s => {
+                const sDate = new Date(s.date);
+                if (sDate >= startOfToday) todayMins += s.duration;
+                if (sDate >= startOfWeek) weekMins += s.duration;
+                
+                // Point calculation (default to true for legacy sessions)
+                const isCompleted = s.completed !== false; 
+                totalPoints += isCompleted ? 5 : -5;
+                possiblePoints += 5;
+            });
+
+            document.getElementById('stat-today').innerText = `${Math.floor(todayMins/60)}h ${todayMins%60}m`;
+            document.getElementById('stat-week').innerText = `${Math.floor(weekMins/60)}h ${weekMins%60}m`;
+            document.getElementById('stat-streak').innerText = streak;
+            document.getElementById('stat-max-streak').innerText = maxStreak;
+            
+            const scoreDisplay = document.getElementById('dash-score');
+            if(scoreDisplay) scoreDisplay.innerText = `${totalPoints} / ${possiblePoints}`;
+
+            const goalPct = state.settings.dailyGoal > 0 ? Math.min(100, Math.round(((todayMins/60) / state.settings.dailyGoal) * 100)) : 0;
+            document.getElementById('stat-goal-pct').innerText = goalPct + '%';
+            document.getElementById('stat-goal-bar').style.width = goalPct + '%';
+
+            const recentContainer = document.getElementById('recent-sessions-list');
+            recentContainer.innerHTML = '';
+            if(state.sessions.length === 0) {
+                recentContainer.innerHTML = '<p class="text-slate-400 text-sm">No recent sessions found.</p>';
+            } else {
+                state.sessions.slice(0, 4).forEach(s => {
+                    recentContainer.innerHTML += `
+                    <div class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 transition">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-primary-500/10 text-primary-400 rounded-lg"><i data-lucide="book" class="w-4 h-4"></i></div>
+                            <div><p class="text-sm font-medium text-white">${s.subject}</p><p class="text-xs text-slate-400">${new Date(s.date).toLocaleDateString()} • ${s.notes || 'No notes'}</p></div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-medium text-slate-300 block">${s.duration}m</span>
+                            ${s.completed === false ? '<span class="text-[10px] text-red-400">-5 pts</span>' : '<span class="text-[10px] text-yellow-400">+5 pts</span>'}
+                        </div>
+                    </div>`;
+                });
+            }
+
+            const bFirst = document.getElementById('badge-first'); const iFirst = document.getElementById('icon-first');
+            const bStreak = document.getElementById('badge-streak'); const iStreak = document.getElementById('icon-streak');
+            if(state.sessions.length > 0) { bFirst.classList.remove('opacity-50'); iFirst.classList.remove('grayscale'); } else { bFirst.classList.add('opacity-50'); iFirst.classList.add('grayscale'); }
+            if(streak >= 7) { bStreak.classList.remove('opacity-50'); iStreak.classList.remove('grayscale'); } else { bStreak.classList.add('opacity-50'); iStreak.classList.add('grayscale'); }
+
+            lucide.createIcons(); renderHeatmap();
+        };
+
+        const updateExamCountdown = () => {
+            const widget = document.getElementById('exam-countdown');
+            if(!state.settings.examDate) { widget.innerText = 'Not Set'; return; }
+            const diffDays = Math.ceil((new Date(state.settings.examDate) - new Date()) / (1000 * 60 * 60 * 24)); 
+            widget.innerText = diffDays > 0 ? `${diffDays} Days` : 'Exam Passed';
+        };
+
+        // --- STREAMING_CHUNK:Calendar & Planner Logic... ---
+        window.changeMonth = (dir) => {
+            state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + dir);
+            renderCalendar();
+        };
+
+        window.selectDate = (dateStr) => {
+            state.calendar.selectedDate = new Date(dateStr);
+            renderCalendar(); renderDailyAnalysis();
+        };
+
+        const renderCalendar = () => {
+            const year = state.calendar.currentDate.getFullYear();
+            const month = state.calendar.currentDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            document.getElementById('calendar-month-year').innerText = new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' });
+            
+            const grid = document.getElementById('calendar-grid-days'); grid.innerHTML = '';
+            for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="p-4 border border-slate-800/30 opacity-30 bg-slate-900/10 rounded-lg"></div>`;
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            const selStr = state.calendar.selectedDate.toISOString().split('T')[0];
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                const hasTasks = state.planner.some(t => t.date === dateStr);
+                const hasSessions = state.sessions.some(s => s.date.startsWith(dateStr));
+                
+                let indicators = '';
+                if(hasTasks) indicators += `<div class="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.6)]"></div>`;
+                if(hasSessions) indicators += `<div class="w-1.5 h-1.5 rounded-full bg-primary-500 shadow-[0_0_5px_rgba(79,70,229,0.6)]"></div>`;
+
+                grid.innerHTML += `
+                <div onclick="selectDate('${dateStr}')" class="p-2 sm:p-4 border ${selStr === dateStr ? 'border-primary-500 bg-primary-600/20' : 'border-slate-800/50 hover:bg-slate-800 glass'} rounded-lg cursor-pointer transition-colors flex flex-col items-center justify-center gap-1.5 min-h-[60px]">
+                    <span class="text-sm ${todayStr === dateStr ? 'text-primary-400 font-bold' : 'text-slate-300'}">${i}</span>
+                    <div class="flex gap-1 h-2">${indicators}</div>
+                </div>`;
+            }
+        };
+
+        const renderDailyAnalysis = () => {
+            if(!state.calendar.selectedDate) return;
+            const dateStr = state.calendar.selectedDate.toISOString().split('T')[0];
+            document.getElementById('analysis-date-display').innerText = state.calendar.selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' });
+            document.getElementById('task-date').value = dateStr;
+            
+            const today = new Date(); today.setHours(0,0,0,0);
+            const selectedTime = new Date(state.calendar.selectedDate); selectedTime.setHours(0,0,0,0);
+            const btnAdd = document.getElementById('btn-add-task-cal');
+            if (btnAdd) {
+                if (selectedTime < today) btnAdd.style.display = 'none';
+                else btnAdd.style.display = 'flex';
+            }
+            
+            const dayTasks = state.planner.filter(t => t.date === dateStr);
+            const daySessions = state.sessions.filter(s => s.date.startsWith(dateStr));
+            
+            let totalMins = daySessions.reduce((acc, s) => acc + s.duration, 0);
+            document.getElementById('analysis-hours').innerText = `${Math.floor(totalMins/60)}h ${totalMins%60}m`;
+            
+            const tasksList = document.getElementById('analysis-tasks-list');
+            if(dayTasks.length === 0) tasksList.innerHTML = '<p class="text-sm text-slate-500 italic">No tasks planned for this day.</p>';
+            else tasksList.innerHTML = dayTasks.map(t => `
+                <div onclick="startTaskSession('${t.subject}', ${t.hours})" class="bg-slate-800/50 p-3 rounded-lg border-l-2 ${t.priority === 'High' ? 'border-red-500' : (t.priority === 'Medium' ? 'border-orange-500' : 'border-emerald-500')} flex justify-between items-center group cursor-pointer hover:bg-slate-800/80 transition">
+                    <div><p class="text-sm font-medium text-white">${t.subject}</p><p class="text-xs text-slate-400">Goal: ${t.hours}h</p></div>
+                    <button onclick="event.stopPropagation(); showConfirm('Delete Task?', 'Remove this planned task?', () => deleteTask('${t.id}'))" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+
+            const sessList = document.getElementById('analysis-sessions-list');
+            if(daySessions.length === 0) sessList.innerHTML = '<p class="text-sm text-slate-500 italic">No sessions completed.</p>';
+            else sessList.innerHTML = daySessions.map(s => `
+                <div class="glass p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p class="text-sm font-medium text-white">${s.subject}</p>
+                        <p class="text-xs text-slate-400">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • ${s.duration}m</p>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        };
+
+        window.openTaskModal = () => document.getElementById('modal-add-task').classList.remove('hidden');
+        window.closeTaskModal = () => document.getElementById('modal-add-task').classList.add('hidden');
+        
+        document.getElementById('form-add-task').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const data = {
+                date: document.getElementById('task-date').value, subject: document.getElementById('task-subject').value,
+                hours: parseFloat(document.getElementById('task-hours').value), priority: document.getElementById('task-priority').value,
+                createdAt: new Date().toISOString()
+            };
+            try {
+                await addDoc(getFirebasePath('planner'), data);
+                closeTaskModal(); showToast("Task scheduled", "success");
+                e.target.reset(); renderDailyAnalysis();
+            } catch(e) { showToast("Error scheduling task", "error"); }
+        });
+
+        window.deleteTask = async (id) => {
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'planner', id)); showToast("Task removed", "info"); } catch(e) {}
+        };
+
+        // --- STREAMING_CHUNK:Subjects Management & Duplicate Check... ---
+        window.openSubjectModal = () => document.getElementById('modal-add-subject').classList.remove('hidden');
+        window.closeSubjectModal = () => document.getElementById('modal-add-subject').classList.add('hidden');
+
+        document.getElementById('form-add-subject').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const subjectName = document.getElementById('subject-name').value.trim();
+            
+            const exists = state.subjects.some(sub => sub.name.toLowerCase() === subjectName.toLowerCase());
+            if (exists) return showToast("A subject with this name already exists.", "warning");
+            
+            const data = { name: subjectName, target: parseFloat(document.getElementById('subject-target').value), createdAt: new Date().toISOString() };
+            try {
+                await addDoc(getFirebasePath('subjects'), data);
+                closeSubjectModal(); showToast("Subject Added Successfully", "success"); e.target.reset();
+            } catch(e) { showToast("Error adding subject", "error"); }
+        });
+
+        window.deleteSubject = async (id) => {
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'subjects', id)); showToast("Subject removed", "info"); } catch(e) {}
+        };
+
+        const renderSubjects = () => {
+            const container = document.getElementById('subjects-container'); container.innerHTML = '';
+            if (state.subjects.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 glass rounded-2xl"><div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4"><i data-lucide="library" class="text-slate-400 w-8 h-8"></i></div><h3 class="text-lg font-medium text-white">No Subjects Added</h3><p class="text-slate-400 mt-1 mb-4">Start organizing your studies by adding your first subject.</p><button onclick="openSubjectModal()" class="text-primary-400 hover:text-primary-300 font-medium">Add Subject</button></div>`;
+                lucide.createIcons(); return;
+            }
+
+            const subjectStats = {};
+            state.subjects.forEach(s => subjectStats[s.id] = 0);
+            state.sessions.forEach(s => { const match = state.subjects.find(sub => s.subject === sub.name); if(match) subjectStats[match.id] += s.duration / 60; });
+
+            state.subjects.forEach(sub => {
+                const current = subjectStats[sub.id] || 0;
+                const percent = sub.target > 0 ? Math.min(100, Math.round((current / sub.target) * 100)) : 0;
+                const recentSess = state.sessions.filter(s => s.subject === sub.name).slice(0, 2);
+                let recentHtml = recentSess.length ? recentSess.map(s => `<p class="text-xs text-slate-400 truncate border-t border-slate-700/50 pt-2 mt-2">${new Date(s.date).toLocaleDateString()} • ${s.duration}m</p>`).join('') : '<p class="text-xs text-slate-500 italic mt-2 border-t border-slate-700/50 pt-2">No sessions yet.</p>';
+
+                container.innerHTML += `
+                <div class="glass p-5 rounded-2xl relative group cursor-pointer hover:border-primary-500/50 transition-colors" onclick="openSubjectAnalytics('${sub.id}')">
+                    <button onclick="event.stopPropagation(); showConfirm('Delete Subject?', 'History remains, tracking stops.', () => deleteSubject('${sub.id}'))" class="absolute top-4 right-4 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition z-10"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <div class="flex justify-between items-center mb-4 pr-6"><h3 class="font-bold text-white truncate text-lg">${sub.name}</h3></div>
+                    <div class="flex justify-between text-sm mb-2"><span class="text-slate-400">Target: ${sub.target}h</span><span class="text-primary-400 font-bold">${percent}%</span></div>
+                    <div class="w-full bg-slate-800 rounded-full h-2.5 mb-4 border border-slate-700"><div class="bg-primary-500 h-2.5 rounded-full transition-all" style="width: ${percent}%"></div></div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-2"><span>${current.toFixed(1)}h studied</span><span>${Math.max(0, sub.target - current).toFixed(1)}h remaining</span></div>
+                    ${recentHtml}
+                </div>`;
+            });
+            lucide.createIcons();
+        };
+
+        // --- STREAMING_CHUNK:Subject Analytics Modal Logic... ---
+        let saCurrentSubject = null, saCurrentDate = new Date(), saSelectedDate = new Date();
+
+        window.openSubjectAnalytics = (subjectId) => {
+            const sub = state.subjects.find(s => s.id === subjectId); if(!sub) return;
+            saCurrentSubject = sub; saCurrentDate = new Date(); saSelectedDate = new Date();
+            
+            document.getElementById('sa-title').innerText = `${sub.name} Analytics`;
+            document.getElementById('modal-subject-analytics').classList.remove('hidden');
+            
+            const subSessions = state.sessions.filter(s => s.subject === sub.name);
+            const totalMins = subSessions.reduce((acc, s) => acc + s.duration, 0);
+            const dailyTotals = {}; subSessions.forEach(s => { const d = s.date.split('T')[0]; dailyTotals[d] = (dailyTotals[d] || 0) + s.duration; });
+            const dailyValues = Object.values(dailyTotals);
+            const maxMins = dailyValues.length ? Math.max(...dailyValues) : 0; const minMins = dailyValues.length ? Math.min(...dailyValues) : 0;
+
+            document.getElementById('sa-total-time').innerText = `${Math.floor(totalMins/60)}h ${totalMins%60}m`;
+            document.getElementById('sa-max-time').innerText = `${Math.floor(maxMins/60)}h ${maxMins%60}m`;
+            document.getElementById('sa-min-time').innerText = `${Math.floor(minMins/60)}h ${minMins%60}m`;
+
+            renderSACalendar(); renderSADaily(); lucide.createIcons();
+        };
+
+        window.closeSubjectAnalyticsModal = () => document.getElementById('modal-subject-analytics').classList.add('hidden');
+        window.changeSAMonth = (dir) => { saCurrentDate.setMonth(saCurrentDate.getMonth() + dir); renderSACalendar(); };
+        window.selectSADate = (dateStr) => { saSelectedDate = new Date(dateStr); renderSACalendar(); renderSADaily(); };
+
+        const renderSACalendar = () => {
+            const year = saCurrentDate.getFullYear(); const month = saCurrentDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
+            document.getElementById('sa-month-year').innerText = new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' });
+            
+            const grid = document.getElementById('sa-calendar-grid'); grid.innerHTML = '';
+            for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="p-2 opacity-0"></div>`;
+            
+            const selStr = saSelectedDate.toISOString().split('T')[0]; const todayStr = new Date().toISOString().split('T')[0];
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                const hasSessions = state.sessions.some(s => s.date.startsWith(dateStr) && s.subject === saCurrentSubject.name);
+                
+                grid.innerHTML += `
+                <div onclick="selectSADate('${dateStr}')" class="p-1 border ${selStr === dateStr ? 'border-primary-500 bg-primary-600/20' : 'border-slate-800/50 hover:bg-slate-800 glass'} rounded cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[40px]">
+                    <span class="text-xs ${todayStr === dateStr ? 'text-primary-400 font-bold' : 'text-slate-300'}">${i}</span>
+                    <div class="h-1.5 mt-0.5">${hasSessions ? '<div class="w-1.5 h-1.5 rounded-full bg-primary-500 shadow-[0_0_5px_rgba(79,70,229,0.6)]"></div>' : ''}</div>
+                </div>`;
+            }
+        };
+
+        const renderSADaily = () => {
+            if(!saSelectedDate || !saCurrentSubject) return;
+            const dateStr = saSelectedDate.toISOString().split('T')[0];
+            document.getElementById('sa-selected-date').innerText = saSelectedDate.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+            
+            const daySessions = state.sessions.filter(s => s.date.startsWith(dateStr) && s.subject === saCurrentSubject.name);
+            const totalMins = daySessions.reduce((acc, s) => acc + s.duration, 0);
+            document.getElementById('sa-day-total').innerText = `Total: ${Math.floor(totalMins/60)}h ${totalMins%60}m`;
+            
+            const sessList = document.getElementById('sa-day-sessions');
+            if(daySessions.length === 0) sessList.innerHTML = '<p class="text-xs text-slate-500 italic">No sessions.</p>';
+            else sessList.innerHTML = daySessions.map(s => `
+                <div class="bg-slate-900/50 p-2 rounded border border-slate-700/50">
+                    <p class="text-xs text-white">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • <span class="text-primary-400 font-medium">${s.duration}m</span></p>
+                    ${s.notes ? `<p class="text-[10px] text-slate-400 mt-1 truncate">${s.notes}</p>` : ''}
+                </div>
+            `).join('');
+        };
+
+        // --- STREAMING_CHUNK:Global History & Charts logic... ---
+        const renderHistory = () => {
+            const tbody = document.getElementById('history-table-body');
+            const term = document.getElementById('history-search').value.toLowerCase();
+            const filter = document.getElementById('history-filter').value;
+            
+            tbody.innerHTML = '';
+            const filtered = state.sessions.filter(s => {
+                const matchSearch = (s.notes || '').toLowerCase().includes(term) || s.subject.toLowerCase().includes(term);
+                const matchFilter = filter === 'all' || s.subject === filter;
+                return matchSearch && matchFilter;
+            });
+
+            if(filtered.length === 0) { document.getElementById('history-empty').classList.remove('hidden'); } 
+            else {
+                document.getElementById('history-empty').classList.add('hidden');
+                filtered.forEach(s => {
+                    tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50 transition-colors">
+                        <td class="p-4 whitespace-nowrap text-sm text-slate-300">${new Date(s.date).toLocaleDateString()} <span class="text-slate-500 text-xs ml-1">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
+                        <td class="p-4 text-sm font-medium text-white"><span class="bg-slate-800 px-2 py-1 rounded-md border border-slate-700">${s.subject}</span></td>
+                        <td class="p-4 text-sm text-primary-400 font-medium">${s.duration} mins</td>
+                        <td class="p-4 text-sm text-slate-400 max-w-[200px] truncate">${s.notes || '-'}</td>
+                    </tr>`;
+                });
+            }
+        };
+        document.getElementById('history-search').addEventListener('input', renderHistory);
+        document.getElementById('history-filter').addEventListener('change', renderHistory);
+
+        let charts = {};
+        const renderCharts = () => {
+            Chart.defaults.color = '#94a3b8'; Chart.defaults.borderColor = 'rgba(255,255,255,0.05)'; Chart.defaults.font.family = 'Inter';
+
+            const now = new Date();
+            const last7Days = Array.from({length: 7}, (_, i) => { const d = new Date(now); d.setDate(d.getDate() - i); return d.toDateString(); }).reverse();
+            const weeklyData = [0,0,0,0,0,0,0]; const subjectCounts = {}; const monthlyData = new Array(12).fill(0);
+
+            state.sessions.forEach(s => {
+                const dateStr = new Date(s.date).toDateString();
+                const idx = last7Days.indexOf(dateStr);
+                if(idx !== -1) weeklyData[idx] += s.duration / 60;
+                subjectCounts[s.subject] = (subjectCounts[s.subject] || 0) + (s.duration/60);
+                if(new Date(s.date).getFullYear() === now.getFullYear()) monthlyData[new Date(s.date).getMonth()] += s.duration / 60;
+            });
+
+            const dayLabels = last7Days.map(d => d.split(' ')[0] + ' ' + d.split(' ')[2]);
+
+            if(charts.bar) charts.bar.destroy();
+            charts.bar = new Chart(document.getElementById('chart-bar-weekly').getContext('2d'), {
+                type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Hours', data: weeklyData, backgroundColor: '#4f46e5', borderRadius: 6, barPercentage: 0.6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            if(charts.pie) charts.pie.destroy();
+            charts.pie = new Chart(document.getElementById('chart-pie-subjects').getContext('2d'), {
+                type: 'doughnut', data: { labels: Object.keys(subjectCounts), datasets: [{ data: Object.values(subjectCounts), backgroundColor: ['#4f46e5', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'], borderWidth: 0, hoverOffset: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } }
+            });
+
+            if(charts.line) charts.line.destroy();
+            charts.line = new Chart(document.getElementById('chart-line-monthly').getContext('2d'), {
+                type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Hours', data: monthlyData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        };
+
+        const renderHeatmap = () => {
+            const container = document.getElementById('heatmap-container'); container.innerHTML = '';
+            const dayMap = {}; state.sessions.forEach(s => { const dateStr = new Date(s.date).toISOString().split('T')[0]; dayMap[dateStr] = (dayMap[dateStr] || 0) + s.duration; });
+            const today = new Date();
+            for(let i=364; i>=0; i--) {
+                const d = new Date(today); d.setDate(today.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0]; const mins = dayMap[dateStr] || 0;
+                let heatClass = ''; if(mins > 180) heatClass = 'heat-4'; else if(mins > 120) heatClass = 'heat-3'; else if(mins > 60) heatClass = 'heat-2'; else if(mins > 0) heatClass = 'heat-1';
+                const cell = document.createElement('div'); cell.className = `heatmap-cell ${heatClass}`; cell.title = `${dateStr}: ${mins} mins`;
+                container.appendChild(cell);
+            }
+        };
+
+        // --- STREAMING_CHUNK:Settings & App Initialization... ---
+        const renderSettings = () => {
+            document.getElementById('settings-daily-goal').value = state.settings.dailyGoal; document.getElementById('settings-weekly-goal').value = state.settings.weeklyGoal;
+            document.getElementById('settings-exam-date').value = state.settings.examDate || ''; document.getElementById('settings-sound').checked = state.settings.soundEnabled;
+            document.getElementById('settings-name').value = state.settings.name || 'User';
+            if(currentUser) document.getElementById('settings-email').innerText = currentUser.email || 'Guest';
+        };
+
+        document.getElementById('btn-save-settings').addEventListener('click', async () => {
+            if(!currentUser) return;
+            state.settings = {
+                dailyGoal: parseFloat(document.getElementById('settings-daily-goal').value), weeklyGoal: parseFloat(document.getElementById('settings-weekly-goal').value),
+                examDate: document.getElementById('settings-exam-date').value, soundEnabled: document.getElementById('settings-sound').checked,
+                name: document.getElementById('settings-name').value
+            };
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile'), state.settings);
+                showToast("Settings saved", "success"); updateAllUI();
+            } catch(e) { showToast("Failed to save settings", "error"); }
+        });
+
+        window.onload = () => { lucide.createIcons(); initAuthFlow(); };
+    </script>
+</body>
+</html>
