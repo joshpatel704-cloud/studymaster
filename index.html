@@ -339,15 +339,15 @@
                                     <i data-lucide="pause" class="w-6 h-6"></i>
                                 </button>
                                 <button id="timer-end" class="px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-medium transition-colors hidden">
-                                    End Session
-                                </button>
-                            </div>
-                            <button id="timer-resume-suspended" class="px-5 py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white rounded-xl font-medium transition-all hidden flex items-center gap-2 shadow-lg shadow-emerald-500/10">
-                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Resume Focus Session
+                                End Session
                             </button>
                         </div>
+                        <button id="timer-resume-suspended" class="px-5 py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white rounded-xl font-medium transition-all hidden flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                            <i data-lucide="skip-forward" class="w-4 h-4"></i> Skip Break & Resume
+                        </button>
+                    </div>
 
-                        <!-- Session Details Input -->
+                    <!-- Session Details Input -->
                         <div class="w-full max-w-md glass p-6 rounded-2xl space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -711,7 +711,8 @@
                 suspendedSession: null, // Stores saved focus session details during breaks
                 startTime: null,        // Real timestamp when start/resume clicked
                 baseTimeLeft: 0,        // Saved countdown base at start of segment
-                baseAccumulated: 0      // Saved accumulated base at start of segment
+                baseAccumulated: 0,     // Saved accumulated base at start of segment
+                actualStartTime: null   // True start time of the entire study session for logging
             },
             calendar: {
                 currentDate: new Date(),
@@ -1022,6 +1023,7 @@
             localStorage.setItem(uidKey('timeLeft'), state.timer.timeLeft);
             localStorage.setItem(uidKey('accumulatedSeconds'), state.timer.accumulatedSeconds);
             localStorage.setItem(uidKey('mode'), state.timer.mode);
+            localStorage.setItem(uidKey('actualStartTime'), state.timer.actualStartTime || '');
             
             const subSelect = document.getElementById('timer-subject');
             localStorage.setItem(uidKey('subject'), subSelect ? subSelect.value : 'General Study');
@@ -1042,6 +1044,7 @@
             localStorage.removeItem(uidKey('subject'));
             localStorage.removeItem(uidKey('notes'));
             localStorage.removeItem(uidKey('suspendedSession'));
+            localStorage.removeItem(uidKey('actualStartTime'));
         };
 
         const restoreTimerStateFromLocalStorage = () => {
@@ -1067,8 +1070,10 @@
             const subject = localStorage.getItem(uidKey('subject')) || 'General Study';
             const notes = localStorage.getItem(uidKey('notes')) || '';
             const savedSuspended = localStorage.getItem(uidKey('suspendedSession'));
+            const actualStart = localStorage.getItem(uidKey('actualStartTime'));
 
             state.timer.mode = mode;
+            if (actualStart) state.timer.actualStartTime = actualStart;
             if (savedSuspended && savedSuspended !== 'undefined') state.timer.suspendedSession = JSON.parse(savedSuspended);
 
             const subSelect = document.getElementById('timer-subject');
@@ -1099,6 +1104,7 @@
                     
                     const data = {
                         date: new Date().toISOString(),
+                        startTime: state.timer.actualStartTime || new Date(Date.now() - baseTimeLeft * 1000).toISOString(),
                         duration: Math.floor(state.timer.accumulatedSeconds / 60),
                         subject: subject,
                         notes: notes + " (Completed in background)",
@@ -1130,7 +1136,8 @@
                         accumulatedSeconds: state.timer.accumulatedSeconds,
                         mode: state.timer.mode,
                         subject: document.getElementById('timer-subject').value,
-                        notes: document.getElementById('timer-notes').value
+                        notes: document.getElementById('timer-notes').value,
+                        actualStartTime: state.timer.actualStartTime
                     };
                     const resumeBtn = document.getElementById('timer-resume-suspended');
                     if (resumeBtn) resumeBtn.classList.remove('hidden');
@@ -1147,6 +1154,7 @@
             state.timer.mode = session.mode;
             state.timer.timeLeft = session.timeLeft;
             state.timer.accumulatedSeconds = session.accumulatedSeconds;
+            state.timer.actualStartTime = session.actualStartTime || null;
 
             const subDropdown = document.getElementById('timer-subject');
             if (subDropdown) subDropdown.value = session.subject;
@@ -1334,6 +1342,10 @@
 
         window.startTimer = () => {
             if(!state.timer.isRunning) {
+                if (state.timer.accumulatedSeconds === 0 && !state.timer.actualStartTime) {
+                    state.timer.actualStartTime = new Date().toISOString();
+                }
+
                 state.timer.startTime = Date.now();
                 state.timer.baseTimeLeft = state.timer.timeLeft;
                 state.timer.baseAccumulated = state.timer.accumulatedSeconds;
@@ -1379,8 +1391,16 @@
             const durationMins = Math.floor(state.timer.accumulatedSeconds / 60);
             if (durationMins < 1) { showToast("Session too short to save.", "warning"); return resetTimer(); }
 
+            const endTime = new Date();
+            let startTimeStr = state.timer.actualStartTime;
+            if (!startTimeStr) {
+                const st = new Date(endTime.getTime() - (durationMins * 60000));
+                startTimeStr = st.toISOString();
+            }
+
             const data = {
-                date: new Date().toISOString(),
+                date: endTime.toISOString(),
+                startTime: startTimeStr,
                 duration: durationMins,
                 subject: document.getElementById('timer-subject').value,
                 notes: document.getElementById('timer-notes').value,
@@ -1396,7 +1416,9 @@
         };
 
         const resetTimer = () => {
-            window.stopTimer(); switchTimerMode(state.timer.mode);
+            window.stopTimer(); 
+            state.timer.actualStartTime = null;
+            switchTimerMode(state.timer.mode);
             document.getElementById('timer-end').classList.add('hidden');
             document.getElementById('timer-notes').value = '';
             clearTimerStateFromLocalStorage();
@@ -1463,11 +1485,13 @@
                 recentContainer.innerHTML = '<p class="text-slate-400 text-sm">No recent sessions found.</p>';
             } else {
                 state.sessions.slice(0, 4).forEach(s => {
+                    const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    const timeDisplay = st ? `${st} • ` : '';
                     recentContainer.innerHTML += `
                     <div class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 transition">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-primary-500/10 text-primary-400 rounded-lg"><i data-lucide="book" class="w-4 h-4"></i></div>
-                            <div><p class="text-sm font-medium text-white">${s.subject}</p><p class="text-xs text-slate-400">${new Date(s.date).toLocaleDateString()} • ${s.notes || 'No notes'}</p></div>
+                            <div><p class="text-sm font-medium text-white">${s.subject}</p><p class="text-xs text-slate-400">${new Date(s.date).toLocaleDateString()} • ${timeDisplay}${s.notes || 'No notes'}</p></div>
                         </div>
                         <div class="text-right">
                             <span class="text-sm font-medium text-slate-300 block">${s.duration}m</span>
@@ -1565,14 +1589,18 @@
 
             const sessList = document.getElementById('analysis-sessions-list');
             if(daySessions.length === 0) sessList.innerHTML = '<p class="text-sm text-slate-500 italic">No sessions completed.</p>';
-            else sessList.innerHTML = daySessions.map(s => `
+            else sessList.innerHTML = daySessions.map(s => {
+                const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' - ' : '';
+                const et = new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                return `
                 <div class="glass p-3 rounded-lg flex justify-between items-center">
                     <div>
                         <p class="text-sm font-medium text-white">${s.subject}</p>
-                        <p class="text-xs text-slate-400">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • ${s.duration}m</p>
+                        <p class="text-xs text-slate-400">${st}${et} • ${s.duration}m</p>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
             lucide.createIcons();
         };
 
@@ -1711,12 +1739,16 @@
             
             const sessList = document.getElementById('sa-day-sessions');
             if(daySessions.length === 0) sessList.innerHTML = '<p class="text-xs text-slate-500 italic">No sessions.</p>';
-            else sessList.innerHTML = daySessions.map(s => `
+            else sessList.innerHTML = daySessions.map(s => {
+                const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' - ' : '';
+                const et = new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                return `
                 <div class="bg-slate-900/50 p-2 rounded border border-slate-700/50">
-                    <p class="text-xs text-white">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • <span class="text-primary-400 font-medium">${s.duration}m</span></p>
+                    <p class="text-xs text-white">${st}${et} • <span class="text-primary-400 font-medium">${s.duration}m</span></p>
                     ${s.notes ? `<p class="text-[10px] text-slate-400 mt-1 truncate">${s.notes}</p>` : ''}
                 </div>
-            `).join('');
+                `;
+            }).join('');
         };
 
         // --- STREAMING_CHUNK:Global History & Charts logic... ---
@@ -1736,9 +1768,14 @@
             else {
                 document.getElementById('history-empty').classList.add('hidden');
                 filtered.forEach(s => {
+                    const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown';
+                    const et = new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50 transition-colors">
-                        <td class="p-4 whitespace-nowrap text-sm text-slate-300">${new Date(s.date).toLocaleDateString()} <span class="text-slate-500 text-xs ml-1">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
+                        <td class="p-4 whitespace-nowrap text-sm text-slate-300">
+                            ${new Date(s.date).toLocaleDateString()} 
+                            <span class="text-slate-500 text-xs ml-1 block mt-0.5">${st} - ${et}</span>
+                        </td>
                         <td class="p-4 text-sm font-medium text-white"><span class="bg-slate-800 px-2 py-1 rounded-md border border-slate-700">${s.subject}</span></td>
                         <td class="p-4 text-sm text-primary-400 font-medium">${s.duration} mins</td>
                         <td class="p-4 text-sm text-slate-400 max-w-[200px] truncate">${s.notes || '-'}</td>
