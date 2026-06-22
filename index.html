@@ -330,7 +330,7 @@
                         </div>
 
                         <!-- Controls -->
-                        <div class="flex flex-col items-center gap-6 mb-10">
+                        <div class="flex flex-col sm:flex-row items-center gap-4 mb-10">
                             <div class="flex items-center gap-4">
                                 <button id="timer-start" class="w-16 h-16 bg-primary-600 hover:bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105">
                                     <i data-lucide="play" class="w-6 h-6 ml-1"></i>
@@ -342,26 +342,9 @@
                                     End Session
                                 </button>
                             </div>
-
-                            <!-- Suspended Session Banner -->
-                            <div id="suspended-session-banner" class="hidden flex flex-col items-center gap-2 p-4 rounded-xl bg-slate-800/80 border border-slate-700 text-center max-w-sm w-full transition-all">
-                                <p class="text-xs text-slate-400 flex items-center gap-1.5 justify-center">
-                                    <i data-lucide="pause-circle" class="w-4 h-4 text-emerald-400"></i> Original study session paused at <span id="suspended-time-left" class="text-emerald-400 font-bold">00:00</span>
-                                </p>
-                                <button id="btn-resume-study" class="w-full mt-1 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-all text-xs font-semibold flex items-center justify-center gap-2">
-                                    <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i> Stop Break & Resume Study
-                                </button>
-                            </div>
-
-                            <!-- Take Quick Break Actions when Custom study is running/paused -->
-                            <div id="quick-break-actions" class="hidden flex gap-3 transition-all">
-                                <button id="btn-take-short" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold">
-                                    <i data-lucide="coffee" class="w-4 h-4"></i> Take 5m Break
-                                </button>
-                                <button id="btn-take-long" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold">
-                                    <i data-lucide="coffee" class="w-4 h-4"></i> Take 15m Break
-                                </button>
-                            </div>
+                            <button id="timer-resume-suspended" class="px-5 py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white rounded-xl font-medium transition-all hidden flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Resume Focus Session
+                            </button>
                         </div>
 
                         <!-- Session Details Input -->
@@ -724,7 +707,11 @@
             },
             timer: {
                 interval: null, timeLeft: 25 * 60, mode: 'pomodoro', isRunning: false, 
-                accumulatedSeconds: 0, suspendedState: null // Stores suspended state of active custom timer
+                accumulatedSeconds: 0,
+                suspendedSession: null, // Stores saved focus session details during breaks
+                startTime: null,        // Real timestamp when start/resume clicked
+                baseTimeLeft: 0,        // Saved countdown base at start of segment
+                baseAccumulated: 0      // Saved accumulated base at start of segment
             },
             calendar: {
                 currentDate: new Date(),
@@ -841,6 +828,7 @@
                 setupRealtimeListeners();
                 updateAllUI();
                 lucide.createIcons();
+                restoreTimerStateFromLocalStorage();
             } else {
                 currentUser = null;
                 document.getElementById('main-app').classList.add('hidden');
@@ -1001,7 +989,7 @@
         });
         document.querySelector('[data-target="view-settings"]').addEventListener('click', () => switchView('view-settings'));
 
-        // --- STREAMING_CHUNK:Timer Core Logic & Suspended Break Controls... ---
+        // --- STREAMING_CHUNK:Timer Core Logic & Custom Goals... ---
         const TIMER_MODES = { pomodoro: 25 * 60, shortbreak: 5 * 60, longbreak: 15 * 60, stopwatch: 0, custom: 60 * 60 };
         const timerDisplay = document.getElementById('timer-display');
         const timerRing = document.getElementById('timer-ring');
@@ -1021,146 +1009,199 @@
                 const percent = ((total - state.timer.timeLeft) / total) * 100;
                 timerRing.style.strokeDashoffset = 283 - (percent / 100) * 283;
             }
-
-            // Sync take-break option visibility dynamically based on custom study progress
-            updateBreakActionsUI();
         };
 
-        const updateBreakActionsUI = () => {
-            const breakActions = document.getElementById('quick-break-actions');
-            const suspendedBanner = document.getElementById('suspended-session-banner');
-            
-            const isStudyMode = (state.timer.mode === 'custom' || state.timer.mode === 'pomodoro');
-            const isBreakMode = (state.timer.mode === 'shortbreak' || state.timer.mode === 'longbreak');
-            
-            // Show custom take quick break panel if in active custom/pomodoro study session with progress
-            if (breakActions) {
-                if (isStudyMode && state.timer.timeLeft < TIMER_MODES[state.timer.mode]) {
-                    breakActions.classList.remove('hidden');
-                } else {
-                    breakActions.classList.add('hidden');
-                }
-            }
-            
-            // Show resume panel if a study session is currently suspended during a break
-            if (suspendedBanner) {
-                if (isBreakMode && state.timer.suspendedState) {
-                    suspendedBanner.classList.remove('hidden');
-                    const sh = Math.floor(state.timer.suspendedState.timeLeft / 3600);
-                    const sm = Math.floor((state.timer.suspendedState.timeLeft % 3600) / 60);
-                    const ss = state.timer.suspendedState.timeLeft % 60;
-                    document.getElementById('suspended-time-left').innerText = `${sh > 0 ? sh+':' : ''}${sm.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
-                } else {
-                    suspendedBanner.classList.add('hidden');
-                }
-            }
-            
-            // Swap end action styling based on study vs break cycles
-            const endBtn = document.getElementById('timer-end');
-            if (endBtn) {
-                if (isBreakMode) {
-                    endBtn.innerText = "End Break";
-                    endBtn.classList.remove('bg-red-500/10', 'text-red-500');
-                    endBtn.classList.add('bg-emerald-500/10', 'text-emerald-400');
-                } else {
-                    endBtn.innerText = "End Session";
-                    endBtn.classList.add('bg-red-500/10', 'text-red-500');
-                    endBtn.classList.remove('bg-emerald-500/10', 'text-emerald-400');
-                }
-            }
-        };
+        const getTimerKey = (key) => currentUser ? `sm_timer_${currentUser.uid}_${key}` : `sm_timer_guest_${key}`;
 
-        // --- STREAMING_CHUNK:Taking Breaks & Suspending original custom sections... ---
-        window.triggerQuickBreak = (durationSecs) => {
-            if (state.timer.isRunning) {
-                stopTimer();
-            }
-            
-            // Freeze and suspend the active custom/pomodoro study session parameters
-            state.timer.suspendedState = {
-                timeLeft: state.timer.timeLeft,
-                mode: state.timer.mode,
-                accumulatedSeconds: state.timer.accumulatedSeconds,
-                subject: document.getElementById('timer-subject').value,
-                notes: document.getElementById('timer-notes').value
-            };
-            
-            // Configure parameters to the target break option
-            const breakMode = durationSecs === 5 * 60 ? 'shortbreak' : 'longbreak';
-            state.timer.mode = breakMode;
-            TIMER_MODES[breakMode] = durationSecs;
-            state.timer.timeLeft = durationSecs;
-            state.timer.accumulatedSeconds = 0;
-            
-            // Style break selector tab
-            document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
-            const breakTab = document.getElementById(`mode-${breakMode}`);
-            if (breakTab) { breakTab.classList.remove('text-slate-400'); breakTab.classList.add('bg-primary-600', 'text-white'); }
-            
-            document.getElementById('timer-status').innerText = breakMode === 'shortbreak' ? 'Short Break' : 'Long Break';
-            
-            updateTimerUI();
-            startTimer(); // Auto-play break
-            showToast("Original custom study section suspended! Enjoy your break.", "success");
-        };
-
-        document.getElementById('btn-take-short').onclick = () => triggerQuickBreak(5 * 60);
-        document.getElementById('btn-take-long').onclick = () => triggerQuickBreak(15 * 60);
-
-        window.restoreSuspendedSession = () => {
-            if (!state.timer.suspendedState) return;
-            
-            stopTimer();
-            const suspended = state.timer.suspendedState;
-            state.timer.suspendedState = null; // Clean suspension state
-            
-            state.timer.mode = suspended.mode;
-            state.timer.timeLeft = suspended.timeLeft;
-            state.timer.accumulatedSeconds = suspended.accumulatedSeconds;
+        const saveTimerStateToLocalStorage = () => {
+            const uidKey = (key) => getTimerKey(key);
+            localStorage.setItem(uidKey('isRunning'), state.timer.isRunning);
+            localStorage.setItem(uidKey('startTime'), state.timer.startTime || '');
+            localStorage.setItem(uidKey('baseTimeLeft'), state.timer.baseTimeLeft);
+            localStorage.setItem(uidKey('baseAccumulated'), state.timer.baseAccumulated);
+            localStorage.setItem(uidKey('timeLeft'), state.timer.timeLeft);
+            localStorage.setItem(uidKey('accumulatedSeconds'), state.timer.accumulatedSeconds);
+            localStorage.setItem(uidKey('mode'), state.timer.mode);
             
             const subSelect = document.getElementById('timer-subject');
-            if (subSelect) subSelect.value = suspended.subject;
-            const noteArea = document.getElementById('timer-notes');
-            if (noteArea) noteArea.value = suspended.notes;
+            localStorage.setItem(uidKey('subject'), subSelect ? subSelect.value : 'General Study');
             
-            // Style tabs back
-            document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
-            const customTab = document.getElementById(`mode-${suspended.mode}`);
-            if (customTab) { customTab.classList.remove('text-slate-400'); customTab.classList.add('bg-primary-600', 'text-white'); }
-            
-            document.getElementById('timer-status').innerText = suspended.mode === 'custom' ? 'Custom Goal' : 'Focus Time';
-            
-            updateTimerUI();
-            startTimer(); // Resume custom section
-            showToast("Resumed your original study session exactly where you left off!", "success");
+            const notesArea = document.getElementById('timer-notes');
+            localStorage.setItem(uidKey('notes'), notesArea ? notesArea.value : '');
+            localStorage.setItem(uidKey('suspendedSession'), state.timer.suspendedSession ? JSON.stringify(state.timer.suspendedSession) : '');
         };
 
-        document.getElementById('btn-resume-study').onclick = restoreSuspendedSession;
+        const clearTimerStateFromLocalStorage = () => {
+            const uidKey = (key) => getTimerKey(key);
+            localStorage.removeItem(uidKey('isRunning'));
+            localStorage.removeItem(uidKey('startTime'));
+            localStorage.removeItem(uidKey('baseTimeLeft'));
+            localStorage.removeItem(uidKey('baseAccumulated'));
+            localStorage.removeItem(uidKey('timeLeft'));
+            localStorage.removeItem(uidKey('accumulatedSeconds'));
+            localStorage.removeItem(uidKey('subject'));
+            localStorage.removeItem(uidKey('notes'));
+            localStorage.removeItem(uidKey('suspendedSession'));
+        };
 
-        window.switchTimerMode = (mode) => {
-            // Automatically suspend any running or active custom countdown if switching tabs manually to breaks
-            if ((state.timer.mode === 'custom' || state.timer.mode === 'pomodoro') && (mode === 'shortbreak' || mode === 'longbreak')) {
-                if (state.timer.timeLeft < TIMER_MODES[state.timer.mode]) {
-                    state.timer.suspendedState = {
+        const restoreTimerStateFromLocalStorage = () => {
+            const uidKey = (key) => getTimerKey(key);
+            const isRunning = localStorage.getItem(uidKey('isRunning')) === 'true';
+            if (!isRunning) {
+                const savedMode = localStorage.getItem(uidKey('mode'));
+                if (savedMode) {
+                    state.timer.mode = savedMode;
+                    state.timer.timeLeft = parseInt(localStorage.getItem(uidKey('timeLeft'))) || TIMER_MODES[savedMode];
+                    state.timer.accumulatedSeconds = parseInt(localStorage.getItem(uidKey('accumulatedSeconds'))) || 0;
+                }
+                const savedSuspended = localStorage.getItem(uidKey('suspendedSession'));
+                if (savedSuspended && savedSuspended !== 'undefined') state.timer.suspendedSession = JSON.parse(savedSuspended);
+                updateTimerUI();
+                return;
+            }
+
+            const startTime = parseInt(localStorage.getItem(uidKey('startTime')));
+            const baseTimeLeft = parseInt(localStorage.getItem(uidKey('baseTimeLeft'))) || 0;
+            const baseAccumulated = parseInt(localStorage.getItem(uidKey('baseAccumulated'))) || 0;
+            const mode = localStorage.getItem(uidKey('mode')) || 'pomodoro';
+            const subject = localStorage.getItem(uidKey('subject')) || 'General Study';
+            const notes = localStorage.getItem(uidKey('notes')) || '';
+            const savedSuspended = localStorage.getItem(uidKey('suspendedSession'));
+
+            state.timer.mode = mode;
+            if (savedSuspended && savedSuspended !== 'undefined') state.timer.suspendedSession = JSON.parse(savedSuspended);
+
+            const subSelect = document.getElementById('timer-subject');
+            if (subSelect && Array.from(subSelect.options).some(opt => opt.value === subject)) {
+                subSelect.value = subject;
+            }
+            const notesArea = document.getElementById('timer-notes');
+            if (notesArea) notesArea.value = notes;
+
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+
+            if (mode === 'stopwatch') {
+                state.timer.timeLeft = baseTimeLeft + elapsed;
+                state.timer.accumulatedSeconds = baseAccumulated + elapsed;
+                state.timer.startTime = startTime;
+                state.timer.baseTimeLeft = baseTimeLeft;
+                state.timer.baseAccumulated = baseAccumulated;
+                startTimer();
+            } else {
+                if (elapsed >= baseTimeLeft) {
+                    state.timer.timeLeft = 0;
+                    state.timer.accumulatedSeconds = baseAccumulated + baseTimeLeft;
+                    updateTimerUI();
+                    clearTimerStateFromLocalStorage();
+                    
+                    playSound('ding');
+                    showToast(`Focus session on "${subject}" completed while you were away!`, "success");
+                    
+                    const data = {
+                        date: new Date().toISOString(),
+                        duration: Math.floor(state.timer.accumulatedSeconds / 60),
+                        subject: subject,
+                        notes: notes + " (Completed in background)",
+                        mode: mode,
+                        completed: true
+                    };
+                    
+                    addDoc(getFirebasePath('sessions'), data).then(() => {
+                        resetTimer();
+                    }).catch(e => console.error("Error saving bg session:", e));
+                } else {
+                    state.timer.timeLeft = baseTimeLeft - elapsed;
+                    state.timer.accumulatedSeconds = baseAccumulated + elapsed;
+                    state.timer.startTime = startTime;
+                    state.timer.baseTimeLeft = baseTimeLeft;
+                    state.timer.baseAccumulated = baseAccumulated;
+                    startTimer();
+                }
+            }
+        };
+
+        // Timer Session Suspension & Resuming handlers
+        const suspendActiveStudySession = () => {
+            if (state.timer.mode === 'pomodoro' || state.timer.mode === 'custom') {
+                const totalFocusDuration = TIMER_MODES[state.timer.mode];
+                if (state.timer.timeLeft < totalFocusDuration) {
+                    state.timer.suspendedSession = {
                         timeLeft: state.timer.timeLeft,
-                        mode: state.timer.mode,
                         accumulatedSeconds: state.timer.accumulatedSeconds,
+                        mode: state.timer.mode,
                         subject: document.getElementById('timer-subject').value,
                         notes: document.getElementById('timer-notes').value
                     };
-                    showToast("Study session suspended automatically.", "info");
+                    const resumeBtn = document.getElementById('timer-resume-suspended');
+                    if (resumeBtn) resumeBtn.classList.remove('hidden');
+                    showToast(`Study focus suspended (${Math.floor(state.timer.timeLeft / 60)}m left). Break loaded!`, "info");
                 }
             }
+        };
 
-            // Restore automatically if user toggles back to their active custom countdown tab
-            if (state.timer.suspendedState && (mode === 'custom' || mode === 'pomodoro')) {
-                if (state.timer.suspendedState.mode === mode) {
-                    restoreSuspendedSession();
-                    return;
-                }
+        window.resumeSuspendedSession = () => {
+            if (!state.timer.suspendedSession) return;
+            if (state.timer.isRunning) window.stopTimer();
+
+            const session = state.timer.suspendedSession;
+            state.timer.mode = session.mode;
+            state.timer.timeLeft = session.timeLeft;
+            state.timer.accumulatedSeconds = session.accumulatedSeconds;
+
+            const subDropdown = document.getElementById('timer-subject');
+            if (subDropdown) subDropdown.value = session.subject;
+            const notesArea = document.getElementById('timer-notes');
+            if (notesArea) notesArea.value = session.notes;
+
+            state.timer.suspendedSession = null;
+            const resumeBtn = document.getElementById('timer-resume-suspended');
+            if (resumeBtn) resumeBtn.classList.add('hidden');
+
+            document.querySelectorAll('[id^="mode-"]').forEach(el => { 
+                el.classList.remove('bg-primary-600', 'text-white'); 
+                el.classList.add('text-slate-400'); 
+            });
+            const activeBtn = document.getElementById(`mode-${state.timer.mode}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('bg-primary-600', 'text-white');
             }
 
-            state.timer.mode = mode; state.timer.timeLeft = TIMER_MODES[mode]; state.timer.accumulatedSeconds = 0;
+            const statusMap = {pomodoro: 'Focus Time', custom: 'Custom Goal'};
+            document.getElementById('timer-status').innerText = statusMap[state.timer.mode] || 'Focus Time';
+
+            updateTimerUI();
+            showToast("Focus session resumed exactly where you left off!", "success");
+            window.startTimer();
+        };
+
+        window.switchTimerMode = (mode) => {
+            if (state.timer.isRunning) {
+                window.stopTimer();
+            }
+
+            if (mode === 'shortbreak' || mode === 'longbreak') {
+                suspendActiveStudySession();
+            }
+
+            state.timer.mode = mode; 
+            
+            if (mode === 'custom') {
+                const subject = document.getElementById('timer-subject').value;
+                const todayStr = new Date().toLocaleDateString('sv-SE');
+                const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
+                
+                let hours = 1;
+                if (plannedTask) {
+                    hours = plannedTask.hours;
+                    TIMER_MODES['custom'] = Math.floor(hours * 3600);
+                    showToast(`Auto-loaded planned task goal: ${hours} hours for ${subject}`, "success");
+                }
+                document.getElementById('timer-custom-hours').value = hours;
+            }
+
+            state.timer.timeLeft = TIMER_MODES[mode]; 
+            state.timer.accumulatedSeconds = 0;
             
             document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
             
@@ -1178,41 +1219,23 @@
         document.getElementById('mode-custom').onclick = () => switchTimerMode('custom');
         document.getElementById('mode-stopwatch').onclick = () => switchTimerMode('stopwatch');
 
-        // --- STREAMING_CHUNK:Planned Tasks automatic custom configuration and launch... ---
-        window.checkAndAutoStartPlannedTask = (subject) => {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
-            
-            if (plannedTask) {
-                const hours = plannedTask.hours;
-                document.getElementById('timer-custom-hours').value = hours;
-                TIMER_MODES['custom'] = Math.floor(hours * 3600);
-                state.timer.timeLeft = TIMER_MODES['custom'];
-                state.timer.mode = 'custom';
-                
-                // Redraw UI navigation selection to Custom Goal
-                document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
-                const customBtn = document.getElementById('mode-custom');
-                if (customBtn) { customBtn.classList.remove('text-slate-400'); customBtn.classList.add('bg-primary-600', 'text-white'); }
-                document.getElementById('timer-status').innerText = 'Custom Goal';
-                
-                updateTimerUI();
-                startTimer(); // Auto launch custom timer
-                showToast(`Today's planned task found! Auto-launching ${hours}h custom timer for ${subject}.`, "success");
-                return true;
-            }
-            return false;
-        };
-
         document.getElementById('timer-subject').addEventListener('change', (e) => {
             const subject = e.target.value;
-            // Check and auto launch planned task
-            const autoStarted = checkAndAutoStartPlannedTask(subject);
-            if (!autoStarted) {
-                let hours = 1;
-                document.getElementById('timer-custom-hours').value = hours;
-                TIMER_MODES['custom'] = Math.floor(hours * 3600);
-                if (!state.timer.isRunning) switchTimerMode('custom');
+            let hours = 1;
+            
+            const todayStr = new Date().toLocaleDateString('sv-SE');
+            const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
+            if (plannedTask) {
+                hours = plannedTask.hours;
+                showToast(`Auto-loaded planned task: ${hours}h for ${subject}`, "success");
+            }
+            
+            document.getElementById('timer-custom-hours').value = hours;
+            TIMER_MODES['custom'] = Math.floor(hours * 3600);
+            
+            if (state.timer.mode === 'custom') {
+                state.timer.timeLeft = TIMER_MODES['custom'];
+                updateTimerUI();
             }
         });
 
@@ -1252,6 +1275,11 @@
         window.startTaskSession = (subject, hours) => {
             if(state.timer.isRunning) return showToast("Please pause current timer to switch tasks.", "warning");
             
+            // Clear suspended study states when launching a new plan focus
+            state.timer.suspendedSession = null;
+            const resumeBtn = document.getElementById('timer-resume-suspended');
+            if (resumeBtn) resumeBtn.classList.add('hidden');
+
             switchView('view-timer');
             
             const subjectSelect = document.getElementById('timer-subject');
@@ -1267,19 +1295,29 @@
             showToast(`Ready to focus on ${subject} for ${hours}h!`, "info");
         };
 
-        const tick = () => {
+        const updateTimerFromTimestamp = () => {
+            if (!state.timer.isRunning || !state.timer.startTime) return;
+            const elapsed = Math.floor((Date.now() - state.timer.startTime) / 1000);
+            
             if (state.timer.mode === 'stopwatch') {
-                state.timer.timeLeft++; state.timer.accumulatedSeconds++;
+                state.timer.timeLeft = state.timer.baseTimeLeft + elapsed;
+                state.timer.accumulatedSeconds = state.timer.baseAccumulated + elapsed;
             } else {
-                if (state.timer.timeLeft > 0) { state.timer.timeLeft--; state.timer.accumulatedSeconds++; } 
-                else {
-                    window.stopTimer(); playSound('ding'); 
+                state.timer.timeLeft = Math.max(0, state.timer.baseTimeLeft - elapsed);
+                state.timer.accumulatedSeconds = state.timer.baseAccumulated + Math.min(state.timer.baseTimeLeft, elapsed);
+                
+                if (state.timer.timeLeft <= 0) {
+                    window.stopTimer();
+                    playSound('ding'); 
                     if (state.timer.mode === 'pomodoro' || state.timer.mode === 'custom') {
                         saveSession(true);
                     } else {
-                        // Restore original study section automatically if break reaches zero
-                        if (state.timer.suspendedState) {
-                            restoreSuspendedSession();
+                        // Check if a suspended session is waiting to be resumed
+                        if (state.timer.suspendedSession) {
+                            showToast("Break complete! Resuming your focus session...", "success");
+                            setTimeout(() => {
+                                window.resumeSuspendedSession();
+                            }, 1000);
                         } else {
                             showToast("Break complete!", "success");
                         }
@@ -1290,22 +1328,50 @@
             updateTimerUI();
         };
 
+        const tick = () => {
+            updateTimerFromTimestamp();
+        };
+
         window.startTimer = () => {
             if(!state.timer.isRunning) {
+                state.timer.startTime = Date.now();
+                state.timer.baseTimeLeft = state.timer.timeLeft;
+                state.timer.baseAccumulated = state.timer.accumulatedSeconds;
+
                 state.timer.isRunning = true;
                 state.timer.interval = setInterval(tick, 1000);
                 document.getElementById('timer-start').classList.add('hidden');
                 document.getElementById('timer-pause').classList.remove('hidden');
                 document.getElementById('timer-end').classList.remove('hidden');
+                saveTimerStateToLocalStorage();
             }
         };
 
         window.stopTimer = () => {
+            if (state.timer.isRunning && state.timer.startTime) {
+                const elapsed = Math.floor((Date.now() - state.timer.startTime) / 1000);
+                if (state.timer.mode === 'stopwatch') {
+                    state.timer.timeLeft = state.timer.baseTimeLeft + elapsed;
+                    state.timer.accumulatedSeconds = state.timer.baseAccumulated + elapsed;
+                } else {
+                    state.timer.timeLeft = Math.max(0, state.timer.baseTimeLeft - elapsed);
+                    state.timer.accumulatedSeconds = state.timer.baseAccumulated + Math.min(state.timer.baseTimeLeft, elapsed);
+                }
+            }
             clearInterval(state.timer.interval);
             state.timer.isRunning = false;
+            state.timer.startTime = null;
             document.getElementById('timer-start').classList.remove('hidden');
             document.getElementById('timer-pause').classList.add('hidden');
+            saveTimerStateToLocalStorage();
         };
+
+        // Handle page visibility updates to instantly sync backgrounded tab clocks
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && state.timer.isRunning) {
+                updateTimerFromTimestamp();
+            }
+        });
 
         // --- STREAMING_CHUNK:Firebase Save Session & Point System... ---
         const saveSession = async (isCompleted = true) => {
@@ -1326,34 +1392,24 @@
                 await addDoc(getFirebasePath('sessions'), data);
                 showToast(`Saved ${durationMins}m of study! ${isCompleted ? '+5 Points' : '-5 Points'}`, isCompleted ? "success" : "warning");
                 resetTimer();
-            } catch(e) { showToast("Failed to save session.", "error"); }
+            } catch(e) { console.error("Error saving session:", e); }
         };
 
         const resetTimer = () => {
             window.stopTimer(); switchTimerMode(state.timer.mode);
             document.getElementById('timer-end').classList.add('hidden');
             document.getElementById('timer-notes').value = '';
+            clearTimerStateFromLocalStorage();
         };
 
         document.getElementById('timer-start').onclick = startTimer;
         document.getElementById('timer-pause').onclick = stopTimer;
-        
+        document.getElementById('timer-resume-suspended').onclick = () => window.resumeSuspendedSession();
         document.getElementById('timer-end').onclick = () => { 
             stopTimer(); 
-            const isBreakMode = (state.timer.mode === 'shortbreak' || state.timer.mode === 'longbreak');
-            
-            if (isBreakMode) {
-                // If a break is terminated early, restore suspended study section immediately
-                if (state.timer.suspendedState) {
-                    restoreSuspendedSession();
-                } else {
-                    switchTimerMode('custom');
-                }
-            } else {
-                showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => {
-                    saveSession(false);
-                });
-            }
+            showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => {
+                saveSession(false);
+            });
         };
 
         // --- STREAMING_CHUNK:Updating Dashboard & Score Logic... ---
@@ -1501,8 +1557,8 @@
             const tasksList = document.getElementById('analysis-tasks-list');
             if(dayTasks.length === 0) tasksList.innerHTML = '<p class="text-sm text-slate-500 italic">No tasks planned for this day.</p>';
             else tasksList.innerHTML = dayTasks.map(t => `
-                <div onclick="startTaskSession('${t.subject}', ${t.hours})" class="bg-slate-800/50 p-3 rounded-lg border-l-2 ${t.priority === 'High' ? 'border-red-500' : (t.priority === 'Medium' ? 'border-orange-500' : 'border-emerald-500')} flex justify-between items-center group cursor-pointer hover:bg-slate-800/80 transition font-medium">
-                    <div><p class="text-sm font-semibold text-white">${t.subject}</p><p class="text-xs text-slate-400">Goal: ${t.hours}h</p></div>
+                <div onclick="startTaskSession('${t.subject}', ${t.hours})" class="bg-slate-800/50 p-3 rounded-lg border-l-2 ${t.priority === 'High' ? 'border-red-500' : (t.priority === 'Medium' ? 'border-orange-500' : 'border-emerald-500')} flex justify-between items-center group cursor-pointer hover:bg-slate-800/80 transition">
+                    <div><p class="text-sm font-medium text-white">${t.subject}</p><p class="text-xs text-slate-400">Goal: ${t.hours}h</p></div>
                     <button onclick="event.stopPropagation(); showConfirm('Delete Task?', 'Remove this planned task?', () => deleteTask('${t.id}'))" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
@@ -1512,7 +1568,7 @@
             else sessList.innerHTML = daySessions.map(s => `
                 <div class="glass p-3 rounded-lg flex justify-between items-center">
                     <div>
-                        <p class="text-sm font-semibold text-white">${s.subject}</p>
+                        <p class="text-sm font-medium text-white">${s.subject}</p>
                         <p class="text-xs text-slate-400">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • ${s.duration}m</p>
                     </div>
                 </div>
