@@ -330,16 +330,38 @@
                         </div>
 
                         <!-- Controls -->
-                        <div class="flex items-center gap-4 mb-10">
-                            <button id="timer-start" class="w-16 h-16 bg-primary-600 hover:bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105">
-                                <i data-lucide="play" class="w-6 h-6 ml-1"></i>
-                            </button>
-                            <button id="timer-pause" class="w-16 h-16 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white hidden transition-transform hover:scale-105">
-                                <i data-lucide="pause" class="w-6 h-6"></i>
-                            </button>
-                            <button id="timer-end" class="px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-medium transition-colors hidden">
-                                End Session
-                            </button>
+                        <div class="flex flex-col items-center gap-6 mb-10">
+                            <div class="flex items-center gap-4">
+                                <button id="timer-start" class="w-16 h-16 bg-primary-600 hover:bg-primary-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105">
+                                    <i data-lucide="play" class="w-6 h-6 ml-1"></i>
+                                </button>
+                                <button id="timer-pause" class="w-16 h-16 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center text-white hidden transition-transform hover:scale-105">
+                                    <i data-lucide="pause" class="w-6 h-6"></i>
+                                </button>
+                                <button id="timer-end" class="px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-medium transition-colors hidden">
+                                    End Session
+                                </button>
+                            </div>
+
+                            <!-- Suspended Session Banner -->
+                            <div id="suspended-session-banner" class="hidden flex flex-col items-center gap-2 p-4 rounded-xl bg-slate-800/80 border border-slate-700 text-center max-w-sm w-full transition-all">
+                                <p class="text-xs text-slate-400 flex items-center gap-1.5 justify-center">
+                                    <i data-lucide="pause-circle" class="w-4 h-4 text-emerald-400"></i> Original study session paused at <span id="suspended-time-left" class="text-emerald-400 font-bold">00:00</span>
+                                </p>
+                                <button id="btn-resume-study" class="w-full mt-1 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg transition-all text-xs font-semibold flex items-center justify-center gap-2">
+                                    <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i> Stop Break & Resume Study
+                                </button>
+                            </div>
+
+                            <!-- Take Quick Break Actions when Custom study is running/paused -->
+                            <div id="quick-break-actions" class="hidden flex gap-3 transition-all">
+                                <button id="btn-take-short" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold">
+                                    <i data-lucide="coffee" class="w-4 h-4"></i> Take 5m Break
+                                </button>
+                                <button id="btn-take-long" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold">
+                                    <i data-lucide="coffee" class="w-4 h-4"></i> Take 15m Break
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Session Details Input -->
@@ -702,7 +724,7 @@
             },
             timer: {
                 interval: null, timeLeft: 25 * 60, mode: 'pomodoro', isRunning: false, 
-                accumulatedSeconds: 0
+                accumulatedSeconds: 0, suspendedState: null // Stores suspended state of active custom timer
             },
             calendar: {
                 currentDate: new Date(),
@@ -979,7 +1001,7 @@
         });
         document.querySelector('[data-target="view-settings"]').addEventListener('click', () => switchView('view-settings'));
 
-        // --- STREAMING_CHUNK:Timer Core Logic & Custom Goals... ---
+        // --- STREAMING_CHUNK:Timer Core Logic & Suspended Break Controls... ---
         const TIMER_MODES = { pomodoro: 25 * 60, shortbreak: 5 * 60, longbreak: 15 * 60, stopwatch: 0, custom: 60 * 60 };
         const timerDisplay = document.getElementById('timer-display');
         const timerRing = document.getElementById('timer-ring');
@@ -999,10 +1021,145 @@
                 const percent = ((total - state.timer.timeLeft) / total) * 100;
                 timerRing.style.strokeDashoffset = 283 - (percent / 100) * 283;
             }
+
+            // Sync take-break option visibility dynamically based on custom study progress
+            updateBreakActionsUI();
         };
 
+        const updateBreakActionsUI = () => {
+            const breakActions = document.getElementById('quick-break-actions');
+            const suspendedBanner = document.getElementById('suspended-session-banner');
+            
+            const isStudyMode = (state.timer.mode === 'custom' || state.timer.mode === 'pomodoro');
+            const isBreakMode = (state.timer.mode === 'shortbreak' || state.timer.mode === 'longbreak');
+            
+            // Show custom take quick break panel if in active custom/pomodoro study session with progress
+            if (breakActions) {
+                if (isStudyMode && state.timer.timeLeft < TIMER_MODES[state.timer.mode]) {
+                    breakActions.classList.remove('hidden');
+                } else {
+                    breakActions.classList.add('hidden');
+                }
+            }
+            
+            // Show resume panel if a study session is currently suspended during a break
+            if (suspendedBanner) {
+                if (isBreakMode && state.timer.suspendedState) {
+                    suspendedBanner.classList.remove('hidden');
+                    const sh = Math.floor(state.timer.suspendedState.timeLeft / 3600);
+                    const sm = Math.floor((state.timer.suspendedState.timeLeft % 3600) / 60);
+                    const ss = state.timer.suspendedState.timeLeft % 60;
+                    document.getElementById('suspended-time-left').innerText = `${sh > 0 ? sh+':' : ''}${sm.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
+                } else {
+                    suspendedBanner.classList.add('hidden');
+                }
+            }
+            
+            // Swap end action styling based on study vs break cycles
+            const endBtn = document.getElementById('timer-end');
+            if (endBtn) {
+                if (isBreakMode) {
+                    endBtn.innerText = "End Break";
+                    endBtn.classList.remove('bg-red-500/10', 'text-red-500');
+                    endBtn.classList.add('bg-emerald-500/10', 'text-emerald-400');
+                } else {
+                    endBtn.innerText = "End Session";
+                    endBtn.classList.add('bg-red-500/10', 'text-red-500');
+                    endBtn.classList.remove('bg-emerald-500/10', 'text-emerald-400');
+                }
+            }
+        };
+
+        // --- STREAMING_CHUNK:Taking Breaks & Suspending original custom sections... ---
+        window.triggerQuickBreak = (durationSecs) => {
+            if (state.timer.isRunning) {
+                stopTimer();
+            }
+            
+            // Freeze and suspend the active custom/pomodoro study session parameters
+            state.timer.suspendedState = {
+                timeLeft: state.timer.timeLeft,
+                mode: state.timer.mode,
+                accumulatedSeconds: state.timer.accumulatedSeconds,
+                subject: document.getElementById('timer-subject').value,
+                notes: document.getElementById('timer-notes').value
+            };
+            
+            // Configure parameters to the target break option
+            const breakMode = durationSecs === 5 * 60 ? 'shortbreak' : 'longbreak';
+            state.timer.mode = breakMode;
+            TIMER_MODES[breakMode] = durationSecs;
+            state.timer.timeLeft = durationSecs;
+            state.timer.accumulatedSeconds = 0;
+            
+            // Style break selector tab
+            document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
+            const breakTab = document.getElementById(`mode-${breakMode}`);
+            if (breakTab) { breakTab.classList.remove('text-slate-400'); breakTab.classList.add('bg-primary-600', 'text-white'); }
+            
+            document.getElementById('timer-status').innerText = breakMode === 'shortbreak' ? 'Short Break' : 'Long Break';
+            
+            updateTimerUI();
+            startTimer(); // Auto-play break
+            showToast("Original custom study section suspended! Enjoy your break.", "success");
+        };
+
+        document.getElementById('btn-take-short').onclick = () => triggerQuickBreak(5 * 60);
+        document.getElementById('btn-take-long').onclick = () => triggerQuickBreak(15 * 60);
+
+        window.restoreSuspendedSession = () => {
+            if (!state.timer.suspendedState) return;
+            
+            stopTimer();
+            const suspended = state.timer.suspendedState;
+            state.timer.suspendedState = null; // Clean suspension state
+            
+            state.timer.mode = suspended.mode;
+            state.timer.timeLeft = suspended.timeLeft;
+            state.timer.accumulatedSeconds = suspended.accumulatedSeconds;
+            
+            const subSelect = document.getElementById('timer-subject');
+            if (subSelect) subSelect.value = suspended.subject;
+            const noteArea = document.getElementById('timer-notes');
+            if (noteArea) noteArea.value = suspended.notes;
+            
+            // Style tabs back
+            document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
+            const customTab = document.getElementById(`mode-${suspended.mode}`);
+            if (customTab) { customTab.classList.remove('text-slate-400'); customTab.classList.add('bg-primary-600', 'text-white'); }
+            
+            document.getElementById('timer-status').innerText = suspended.mode === 'custom' ? 'Custom Goal' : 'Focus Time';
+            
+            updateTimerUI();
+            startTimer(); // Resume custom section
+            showToast("Resumed your original study session exactly where you left off!", "success");
+        };
+
+        document.getElementById('btn-resume-study').onclick = restoreSuspendedSession;
+
         window.switchTimerMode = (mode) => {
-            if(state.timer.isRunning) return showToast("Pause timer to switch modes", "warning");
+            // Automatically suspend any running or active custom countdown if switching tabs manually to breaks
+            if ((state.timer.mode === 'custom' || state.timer.mode === 'pomodoro') && (mode === 'shortbreak' || mode === 'longbreak')) {
+                if (state.timer.timeLeft < TIMER_MODES[state.timer.mode]) {
+                    state.timer.suspendedState = {
+                        timeLeft: state.timer.timeLeft,
+                        mode: state.timer.mode,
+                        accumulatedSeconds: state.timer.accumulatedSeconds,
+                        subject: document.getElementById('timer-subject').value,
+                        notes: document.getElementById('timer-notes').value
+                    };
+                    showToast("Study session suspended automatically.", "info");
+                }
+            }
+
+            // Restore automatically if user toggles back to their active custom countdown tab
+            if (state.timer.suspendedState && (mode === 'custom' || mode === 'pomodoro')) {
+                if (state.timer.suspendedState.mode === mode) {
+                    restoreSuspendedSession();
+                    return;
+                }
+            }
+
             state.timer.mode = mode; state.timer.timeLeft = TIMER_MODES[mode]; state.timer.accumulatedSeconds = 0;
             
             document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
@@ -1021,20 +1178,42 @@
         document.getElementById('mode-custom').onclick = () => switchTimerMode('custom');
         document.getElementById('mode-stopwatch').onclick = () => switchTimerMode('stopwatch');
 
+        // --- STREAMING_CHUNK:Planned Tasks automatic custom configuration and launch... ---
+        window.checkAndAutoStartPlannedTask = (subject) => {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
+            
+            if (plannedTask) {
+                const hours = plannedTask.hours;
+                document.getElementById('timer-custom-hours').value = hours;
+                TIMER_MODES['custom'] = Math.floor(hours * 3600);
+                state.timer.timeLeft = TIMER_MODES['custom'];
+                state.timer.mode = 'custom';
+                
+                // Redraw UI navigation selection to Custom Goal
+                document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
+                const customBtn = document.getElementById('mode-custom');
+                if (customBtn) { customBtn.classList.remove('text-slate-400'); customBtn.classList.add('bg-primary-600', 'text-white'); }
+                document.getElementById('timer-status').innerText = 'Custom Goal';
+                
+                updateTimerUI();
+                startTimer(); // Auto launch custom timer
+                showToast(`Today's planned task found! Auto-launching ${hours}h custom timer for ${subject}.`, "success");
+                return true;
+            }
+            return false;
+        };
+
         document.getElementById('timer-subject').addEventListener('change', (e) => {
             const subject = e.target.value;
-            let hours = 1;
-            
-            if (subject !== 'General Study') {
-                const todayStr = new Date().toISOString().split('T')[0];
-                const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
-                if (plannedTask) hours = plannedTask.hours;
+            // Check and auto launch planned task
+            const autoStarted = checkAndAutoStartPlannedTask(subject);
+            if (!autoStarted) {
+                let hours = 1;
+                document.getElementById('timer-custom-hours').value = hours;
+                TIMER_MODES['custom'] = Math.floor(hours * 3600);
+                if (!state.timer.isRunning) switchTimerMode('custom');
             }
-            
-            document.getElementById('timer-custom-hours').value = hours;
-            TIMER_MODES['custom'] = Math.floor(hours * 3600);
-            
-            if (!state.timer.isRunning) switchTimerMode('custom');
         });
 
         document.getElementById('timer-custom-hours').addEventListener('input', (e) => {
@@ -1098,7 +1277,12 @@
                     if (state.timer.mode === 'pomodoro' || state.timer.mode === 'custom') {
                         saveSession(true);
                     } else {
-                        showToast("Break complete!", "success");
+                        // Restore original study section automatically if break reaches zero
+                        if (state.timer.suspendedState) {
+                            restoreSuspendedSession();
+                        } else {
+                            showToast("Break complete!", "success");
+                        }
                     }
                     return;
                 }
@@ -1153,11 +1337,23 @@
 
         document.getElementById('timer-start').onclick = startTimer;
         document.getElementById('timer-pause').onclick = stopTimer;
+        
         document.getElementById('timer-end').onclick = () => { 
             stopTimer(); 
-            showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => {
-                saveSession(false);
-            });
+            const isBreakMode = (state.timer.mode === 'shortbreak' || state.timer.mode === 'longbreak');
+            
+            if (isBreakMode) {
+                // If a break is terminated early, restore suspended study section immediately
+                if (state.timer.suspendedState) {
+                    restoreSuspendedSession();
+                } else {
+                    switchTimerMode('custom');
+                }
+            } else {
+                showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => {
+                    saveSession(false);
+                });
+            }
         };
 
         // --- STREAMING_CHUNK:Updating Dashboard & Score Logic... ---
@@ -1305,8 +1501,8 @@
             const tasksList = document.getElementById('analysis-tasks-list');
             if(dayTasks.length === 0) tasksList.innerHTML = '<p class="text-sm text-slate-500 italic">No tasks planned for this day.</p>';
             else tasksList.innerHTML = dayTasks.map(t => `
-                <div onclick="startTaskSession('${t.subject}', ${t.hours})" class="bg-slate-800/50 p-3 rounded-lg border-l-2 ${t.priority === 'High' ? 'border-red-500' : (t.priority === 'Medium' ? 'border-orange-500' : 'border-emerald-500')} flex justify-between items-center group cursor-pointer hover:bg-slate-800/80 transition">
-                    <div><p class="text-sm font-medium text-white">${t.subject}</p><p class="text-xs text-slate-400">Goal: ${t.hours}h</p></div>
+                <div onclick="startTaskSession('${t.subject}', ${t.hours})" class="bg-slate-800/50 p-3 rounded-lg border-l-2 ${t.priority === 'High' ? 'border-red-500' : (t.priority === 'Medium' ? 'border-orange-500' : 'border-emerald-500')} flex justify-between items-center group cursor-pointer hover:bg-slate-800/80 transition font-medium">
+                    <div><p class="text-sm font-semibold text-white">${t.subject}</p><p class="text-xs text-slate-400">Goal: ${t.hours}h</p></div>
                     <button onclick="event.stopPropagation(); showConfirm('Delete Task?', 'Remove this planned task?', () => deleteTask('${t.id}'))" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
@@ -1316,7 +1512,7 @@
             else sessList.innerHTML = daySessions.map(s => `
                 <div class="glass p-3 rounded-lg flex justify-between items-center">
                     <div>
-                        <p class="text-sm font-medium text-white">${s.subject}</p>
+                        <p class="text-sm font-semibold text-white">${s.subject}</p>
                         <p class="text-xs text-slate-400">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • ${s.duration}m</p>
                     </div>
                 </div>
