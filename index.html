@@ -355,6 +355,12 @@
                                 <div>
                                     <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Goal (Hours)</label>
                                     <input type="number" id="timer-custom-hours" step="0.5" min="0.1" value="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none">
+                                    <!-- Preset Toggles for breaks and study blocks -->
+                                    <div class="mt-2 flex gap-1.5 flex-wrap">
+                                        <button type="button" id="preset-break-short" class="px-2 py-1 bg-slate-750 hover:bg-slate-700 text-[10px] font-medium text-slate-300 rounded border border-slate-700 transition">5m Break</button>
+                                        <button type="button" id="preset-break-long" class="px-2 py-1 bg-slate-750 hover:bg-slate-700 text-[10px] font-medium text-slate-300 rounded border border-slate-700 transition">15m Break</button>
+                                        <button type="button" id="preset-study-1h" class="px-2 py-1 bg-slate-750 hover:bg-slate-700 text-[10px] font-medium text-slate-300 rounded border border-slate-700 transition">1h Focus</button>
+                                    </div>
                                 </div>
                             </div>
                             <div>
@@ -894,10 +900,7 @@
                 const docSnap = await getDoc(settingsRef);
                 if (docSnap.exists()) state.settings = { ...state.settings, ...docSnap.data() };
                 else await setDoc(settingsRef, state.settings);
-            } catch (e) { 
-                console.error("Load data error (Check Firestore Rules):", e); 
-                showToast("Error loading profile. Check Firestore rules.", "error");
-            }
+            } catch (e) { console.warn("Load data error:", e); }
         };
 
         const setupRealtimeListeners = () => {
@@ -908,27 +911,18 @@
                 snapshot.forEach(doc => state.sessions.push({ id: doc.id, ...doc.data() }));
                 state.sessions.sort((a,b) => new Date(b.date) - new Date(a.date));
                 updateDashboard(); renderHistory(); updateCharts(); renderSubjects(); renderDailyAnalysis(); renderCalendar();
-            }, (error) => {
-                console.error("Firebase Sessions Error:", error);
-                showToast("Error reading sessions: " + error.message, "error");
             });
             
             const unsubP = onSnapshot(query(getFirebasePath('planner')), (snapshot) => {
                 state.planner = [];
                 snapshot.forEach(doc => state.planner.push({ id: doc.id, ...doc.data() }));
                 renderCalendar(); renderDailyAnalysis();
-            }, (error) => {
-                console.error("Firebase Planner Error:", error);
-                showToast("Error reading planner: " + error.message, "error");
             });
 
             const unsubSub = onSnapshot(query(getFirebasePath('subjects')), (snapshot) => {
                 state.subjects = [];
                 snapshot.forEach(doc => state.subjects.push({ id: doc.id, ...doc.data() }));
                 updateSubjectDropdowns(); renderSubjects();
-            }, (error) => {
-                console.error("Firebase Subjects Error:", error);
-                showToast("Error reading subjects: " + error.message, "error");
             });
 
             state.unsubscribers.push(unsubS, unsubP, unsubSub);
@@ -1054,6 +1048,28 @@
             }
         });
 
+        // Quick Preset Trigger Handlers
+        document.getElementById('preset-break-short').addEventListener('click', () => {
+            document.getElementById('timer-custom-hours').value = 0.0833;
+            TIMER_MODES['custom'] = 5 * 60;
+            switchTimerMode('custom');
+            showToast("Presets Loaded: 5m Short Break", "info");
+        });
+
+        document.getElementById('preset-break-long').addEventListener('click', () => {
+            document.getElementById('timer-custom-hours').value = 0.25;
+            TIMER_MODES['custom'] = 15 * 60;
+            switchTimerMode('custom');
+            showToast("Presets Loaded: 15m Long Break", "info");
+        });
+
+        document.getElementById('preset-study-1h').addEventListener('click', () => {
+            document.getElementById('timer-custom-hours').value = 1;
+            TIMER_MODES['custom'] = 60 * 60;
+            switchTimerMode('custom');
+            showToast("Presets Loaded: 1h Focus block", "info");
+        });
+
         window.startTaskSession = (subject, hours) => {
             if(state.timer.isRunning) return showToast("Please pause current timer to switch tasks.", "warning");
             
@@ -1126,10 +1142,7 @@
                 await addDoc(getFirebasePath('sessions'), data);
                 showToast(`Saved ${durationMins}m of study! ${isCompleted ? '+5 Points' : '-5 Points'}`, isCompleted ? "success" : "warning");
                 resetTimer();
-            } catch(e) { 
-                console.error("Error saving session:", e);
-                showToast("Failed to save session: " + e.message, "error"); 
-            }
+            } catch(e) { showToast("Failed to save session.", "error"); }
         };
 
         const resetTimer = () => {
@@ -1326,20 +1339,11 @@
                 await addDoc(getFirebasePath('planner'), data);
                 closeTaskModal(); showToast("Task scheduled", "success");
                 e.target.reset(); renderDailyAnalysis();
-            } catch(e) { 
-                console.error("Error scheduling task:", e);
-                showToast("Error scheduling task: " + e.message, "error"); 
-            }
+            } catch(e) { showToast("Error scheduling task", "error"); }
         });
 
         window.deleteTask = async (id) => {
-            try { 
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'planner', id)); 
-                showToast("Task removed", "info"); 
-            } catch(e) {
-                console.error("Error deleting task:", e);
-                showToast("Failed to delete task: " + e.message, "error");
-            }
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'planner', id)); showToast("Task removed", "info"); } catch(e) {}
         };
 
         // --- STREAMING_CHUNK:Subjects Management & Duplicate Check... ---
@@ -1358,20 +1362,11 @@
             try {
                 await addDoc(getFirebasePath('subjects'), data);
                 closeSubjectModal(); showToast("Subject Added Successfully", "success"); e.target.reset();
-            } catch(e) { 
-                console.error("Error adding subject:", e);
-                showToast("Error adding subject: " + e.message, "error"); 
-            }
+            } catch(e) { showToast("Error adding subject", "error"); }
         });
 
         window.deleteSubject = async (id) => {
-            try { 
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'subjects', id)); 
-                showToast("Subject removed", "info"); 
-            } catch(e) {
-                console.error("Error deleting subject:", e);
-                showToast("Failed to delete subject: " + e.message, "error");
-            }
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'subjects', id)); showToast("Subject removed", "info"); } catch(e) {}
         };
 
         const renderSubjects = () => {
@@ -1523,7 +1518,20 @@
             if(charts.bar) charts.bar.destroy();
             charts.bar = new Chart(document.getElementById('chart-bar-weekly').getContext('2d'), {
                 type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Hours', data: weeklyData, backgroundColor: '#4f46e5', borderRadius: 6, barPercentage: 0.6 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
             });
 
             if(charts.pie) charts.pie.destroy();
@@ -1535,7 +1543,20 @@
             if(charts.line) charts.line.destroy();
             charts.line = new Chart(document.getElementById('chart-line-monthly').getContext('2d'), {
                 type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Hours', data: monthlyData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
             });
         };
 
@@ -1570,10 +1591,7 @@
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile'), state.settings);
                 showToast("Settings saved", "success"); updateAllUI();
-            } catch(e) { 
-                console.error("Error saving settings:", e);
-                showToast("Failed to save settings: " + e.message, "error"); 
-            }
+            } catch(e) { showToast("Failed to save settings", "error"); }
         });
 
         window.onload = () => { lucide.createIcons(); initAuthFlow(); };
