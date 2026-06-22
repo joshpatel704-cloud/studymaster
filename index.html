@@ -90,6 +90,7 @@
         </div>
     </div>
 
+    <!-- Auth View -->
     <div id="auth-view" class="fixed inset-0 z-40 bg-slate-900 hidden flex items-center justify-center p-4">
         <div class="glass w-full max-w-md rounded-2xl p-8">
             <div class="text-center mb-8">
@@ -142,7 +143,6 @@
         <!-- Sidebar Navigation -->
         <nav class="w-64 bg-slate-850/80 backdrop-blur-xl border-r border-slate-800 flex flex-col justify-between hidden md:flex transition-all">
             <div>
-                <!-- Logo -->
                 <div class="h-16 flex items-center px-6 border-b border-slate-800">
                     <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center mr-3 shadow-lg shadow-primary-500/20">
                         <i data-lucide="book-open" class="text-white w-4 h-4"></i>
@@ -150,7 +150,6 @@
                     <span class="text-white font-bold tracking-wide text-lg">StudyMaster</span>
                 </div>
                 
-                <!-- Nav Links -->
                 <div class="px-4 py-6 space-y-1" id="nav-links">
                     <button data-target="view-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all bg-slate-800 text-white">
                         <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
@@ -173,7 +172,6 @@
                 </div>
             </div>
 
-            <!-- User Profile Snippet -->
             <div class="p-4 border-t border-slate-800">
                 <button data-target="view-settings" class="nav-btn w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-800 transition-colors group">
                     <div class="flex items-center gap-3">
@@ -191,7 +189,6 @@
         <!-- Main Content Area -->
         <main class="flex-1 flex flex-col overflow-hidden relative">
             
-            <!-- Topbar -->
             <header class="h-16 flex items-center justify-between px-6 border-b border-slate-800 glass z-10 sticky top-0">
                 <div class="flex items-center gap-4">
                     <button class="md:hidden text-slate-300 hover:text-white" onclick="document.querySelector('nav').classList.toggle('hidden')">
@@ -201,7 +198,6 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Exam Countdown Widget -->
                     <div class="hidden lg:flex items-center gap-2 glass px-3 py-1.5 rounded-full border border-slate-700/50">
                         <i data-lucide="clock" class="w-4 h-4 text-primary-400"></i>
                         <span class="text-xs font-medium text-slate-300">Exam in: <span id="exam-countdown" class="text-white font-bold">Not Set</span></span>
@@ -232,7 +228,6 @@
                         </button>
                     </div>
 
-                    <!-- Stats Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="glass p-5 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
@@ -271,7 +266,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                        <!-- Recent Activity -->
                         <div class="glass rounded-2xl p-6 lg:col-span-2">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="font-semibold text-white">Recent Sessions</h3>
@@ -282,7 +276,6 @@
                             </div>
                         </div>
 
-                        <!-- Achievements -->
                         <div class="glass rounded-2xl p-6">
                             <h3 class="font-semibold text-white mb-4">Achievements</h3>
                             <div class="space-y-3" id="badges-container">
@@ -311,8 +304,8 @@
                         <!-- Mode Selector -->
                         <div class="flex bg-slate-800 p-1 rounded-lg mb-8 overflow-x-auto max-w-full">
                             <button id="mode-pomodoro" class="px-6 py-2 rounded-md text-sm font-medium bg-primary-600 text-white shadow transition whitespace-nowrap">Pomodoro</button>
-                            <button id="mode-shortbreak" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Short Break</button>
-                            <button id="mode-longbreak" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Long Break</button>
+                            <button id="mode-shortbreak" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Short Break (5m)</button>
+                            <button id="mode-longbreak" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Long Break (15m)</button>
                             <button id="mode-custom" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Custom Goal</button>
                             <button id="mode-stopwatch" class="px-6 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition whitespace-nowrap">Stopwatch</button>
                         </div>
@@ -339,15 +332,16 @@
                                     <i data-lucide="pause" class="w-6 h-6"></i>
                                 </button>
                                 <button id="timer-end" class="px-6 py-3 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl font-medium transition-colors hidden">
-                                End Session
+                                    End Session
+                                </button>
+                            </div>
+                            <!-- Fast Resume Button for returning to focus from a break -->
+                            <button id="timer-resume-suspended" class="px-5 py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white rounded-xl font-medium transition-all hidden flex items-center gap-2 shadow-lg shadow-emerald-500/10">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Skip Break & Resume Focus
                             </button>
                         </div>
-                        <button id="timer-resume-suspended" class="px-5 py-3 bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white rounded-xl font-medium transition-all hidden flex items-center gap-2 shadow-lg shadow-emerald-500/10">
-                            <i data-lucide="skip-forward" class="w-4 h-4"></i> Skip Break & Resume
-                        </button>
-                    </div>
 
-                    <!-- Session Details Input -->
+                        <!-- Session Details Input -->
                         <div class="w-full max-w-md glass p-6 rounded-2xl space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -360,14 +354,16 @@
                                 <div>
                                     <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Goal (Hours)</label>
                                     <input type="number" id="timer-custom-hours" step="0.5" min="0.1" value="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none">
-                                    <!-- Preset Toggles for breaks and study blocks -->
-                                    <div class="mt-2 flex gap-1.5 flex-wrap">
-                                        <button type="button" id="preset-break-short" class="px-2 py-1 bg-slate-750 hover:bg-slate-700 text-[10px] font-medium text-slate-300 rounded border border-slate-700 transition">5m Break</button>
-                                        <button type="button" id="preset-break-long" class="px-2 py-1 bg-slate-750 hover:bg-slate-700 text-[10px] font-medium text-slate-300 rounded border border-slate-700 transition">15m Break</button>
-                                        <button type="button" id="preset-study-1h" class="px-2 py-1 bg-slate-750 hover:bg-slate-700 text-[10px] font-medium text-slate-300 rounded border border-slate-700 transition">1h Focus</button>
-                                    </div>
                                 </div>
                             </div>
+                            
+                            <!-- Quick Break Presets Inside Card -->
+                            <div class="flex gap-2 mb-2 hidden" id="custom-presets-container">
+                                <button id="preset-break-short" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 py-2 rounded border border-slate-700 transition">5m Break</button>
+                                <button id="preset-break-long" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 py-2 rounded border border-slate-700 transition">15m Break</button>
+                                <button id="preset-focus-1h" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 py-2 rounded border border-slate-700 transition">1h Focus</button>
+                            </div>
+
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Session Notes (Optional)</label>
                                 <textarea id="timer-notes" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none resize-none" placeholder="What are you working on?"></textarea>
@@ -379,7 +375,6 @@
                 <section id="view-calendar" class="view-section">
                     <div class="flex flex-col lg:flex-row gap-6">
                         
-                        <!-- Main Calendar -->
                         <div class="flex-1 glass p-6 rounded-2xl">
                             <div class="flex justify-between items-center mb-6">
                                 <h2 class="text-2xl font-bold text-white" id="calendar-month-year">June 2026</h2>
@@ -393,7 +388,6 @@
                                 </div>
                             </div>
                             
-                            <!-- Days Header -->
                             <div class="grid grid-cols-7 gap-2 mb-2 text-center">
                                 <div class="text-sm font-medium text-slate-400">Sun</div>
                                 <div class="text-sm font-medium text-slate-400">Mon</div>
@@ -404,13 +398,9 @@
                                 <div class="text-sm font-medium text-slate-400">Sat</div>
                             </div>
                             
-                            <!-- Grid -->
-                            <div class="grid grid-cols-7 gap-2" id="calendar-grid-days">
-                                <!-- Populated via JS -->
-                            </div>
+                            <div class="grid grid-cols-7 gap-2" id="calendar-grid-days"></div>
                         </div>
 
-                        <!-- Daily Analysis Side Panel -->
                         <div class="w-full lg:w-96 glass p-6 rounded-2xl flex flex-col h-full min-h-[500px]">
                             <div class="border-b border-slate-700 pb-4 mb-4">
                                 <h3 class="text-lg font-bold text-white" id="analysis-date-display">Select a Date</h3>
@@ -424,13 +414,11 @@
                                 </button>
                             </div>
                             <div class="space-y-2 mb-6" id="analysis-tasks-list">
-                                <!-- Populated via JS -->
                                 <p class="text-sm text-slate-500 italic">No tasks planned for this day.</p>
                             </div>
 
                             <h4 class="text-sm font-medium text-slate-300 uppercase tracking-wider mb-3">Study Sessions</h4>
                             <div class="space-y-2 flex-1 overflow-y-auto" id="analysis-sessions-list">
-                                <!-- Populated via JS -->
                                 <p class="text-sm text-slate-500 italic">No sessions completed.</p>
                             </div>
                         </div>
@@ -448,17 +436,7 @@
                         </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="subjects-container">
-                        <!-- Rendered by JS -->
-                        <div class="col-span-full text-center py-12 glass rounded-2xl">
-                            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i data-lucide="library" class="text-slate-400 w-8 h-8"></i>
-                            </div>
-                            <h3 class="text-lg font-medium text-white">No Subjects Added</h3>
-                            <p class="text-slate-400 mt-1 mb-4">Start organizing your studies by adding your first subject.</p>
-                            <button onclick="openSubjectModal()" class="text-primary-400 hover:text-primary-300 font-medium">Add Subject</button>
-                        </div>
-                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="subjects-container"></div>
                 </section>
 
                 <section id="view-analytics" class="view-section">
@@ -519,9 +497,7 @@
                                         <th class="p-4 font-medium">Notes</th>
                                     </tr>
                                 </thead>
-                                <tbody id="history-table-body" class="divide-y divide-slate-700/50">
-                                    <!-- JS Populated -->
-                                </tbody>
+                                <tbody id="history-table-body" class="divide-y divide-slate-700/50"></tbody>
                             </table>
                         </div>
                         <div id="history-empty" class="p-8 text-center text-slate-400 hidden">
@@ -532,7 +508,6 @@
 
                 <section id="view-settings" class="view-section max-w-3xl">
                     <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
-                    
                     <div class="space-y-6">
                         <div class="glass p-6 rounded-2xl">
                             <h3 class="text-lg font-medium text-white mb-4 border-b border-slate-700 pb-2">Profile</h3>
@@ -563,19 +538,6 @@
                             </div>
                         </div>
 
-                        <div class="glass p-6 rounded-2xl">
-                            <h3 class="text-lg font-medium text-white mb-4 border-b border-slate-700 pb-2">Preferences</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-slate-300">Sound Notifications</span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="settings-sound" class="sr-only peer" checked>
-                                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500"></div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="flex gap-4">
                             <button id="btn-save-settings" class="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2.5 rounded-lg font-medium transition shadow-lg shadow-primary-500/20">Save Changes</button>
                             <button id="btn-logout" class="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 px-6 py-2.5 rounded-lg font-medium transition">Sign Out</button>
@@ -587,7 +549,7 @@
         </main>
     </div>
 
-    <!-- Add Task Modal -->
+    <!-- Modals -->
     <div id="modal-add-task" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="glass w-full max-w-md rounded-2xl p-6 border border-slate-700">
             <div class="flex justify-between items-center mb-4">
@@ -622,7 +584,6 @@
         </div>
     </div>
 
-    <!-- Add Subject Modal -->
     <div id="modal-add-subject" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="glass w-full max-w-md rounded-2xl p-6 border border-slate-700">
             <div class="flex justify-between items-center mb-4">
@@ -643,14 +604,12 @@
         </div>
     </div>
 
-    <!-- Subject Analytics Modal -->
     <div id="modal-subject-analytics" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="glass w-full max-w-4xl rounded-2xl p-6 border border-slate-700 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-white" id="sa-title">Subject Details</h3>
                 <button onclick="closeSubjectAnalyticsModal()" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
             </div>
-            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
                     <p class="text-sm text-slate-400 mb-1 uppercase tracking-wider">Total Time Spent</p>
@@ -665,7 +624,6 @@
                     <p class="text-2xl font-bold text-orange-400" id="sa-min-time">0h 0m</p>
                 </div>
             </div>
-
             <div class="flex flex-col md:flex-row gap-6">
                 <div class="flex-1">
                     <div class="flex justify-between items-center mb-4">
@@ -680,7 +638,6 @@
                     </div>
                     <div class="grid grid-cols-7 gap-1" id="sa-calendar-grid"></div>
                 </div>
-
                 <div class="w-full md:w-72 bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
                     <h4 class="font-bold text-white mb-2" id="sa-selected-date">Select a Date</h4>
                     <p class="text-sm text-slate-400 mb-4" id="sa-day-total">Total: 0m</p>
@@ -692,6 +649,7 @@
         </div>
     </div>
 
+    <!-- JavaScript Execution Starts Here -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -699,25 +657,13 @@
 
         // --- STATE MANAGEMENT ---
         const state = {
-            sessions: [],
-            planner: [], 
-            subjects: [], 
-            settings: {
-                dailyGoal: 4, weeklyGoal: 20, examDate: '', soundEnabled: true, name: 'User'
-            },
+            sessions: [], planner: [], subjects: [], 
+            settings: { dailyGoal: 4, weeklyGoal: 20, examDate: '', soundEnabled: true, name: 'User' },
             timer: {
                 interval: null, timeLeft: 25 * 60, mode: 'pomodoro', isRunning: false, 
-                accumulatedSeconds: 0,
-                suspendedSession: null, // Stores saved focus session details during breaks
-                startTime: null,        // Real timestamp when start/resume clicked
-                baseTimeLeft: 0,        // Saved countdown base at start of segment
-                baseAccumulated: 0,     // Saved accumulated base at start of segment
-                actualStartTime: null   // True start time of the entire study session for logging
+                accumulatedSeconds: 0, suspendedSession: null, startTime: null, baseTimeLeft: 0, baseAccumulated: 0, actualStartTime: null
             },
-            calendar: {
-                currentDate: new Date(),
-                selectedDate: new Date()
-            },
+            calendar: { currentDate: new Date(), selectedDate: new Date() },
             unsubscribers: []
         };
 
@@ -730,28 +676,22 @@
             toast.innerHTML = `<span class="text-sm font-medium">${message}</span>`;
             container.appendChild(toast);
             setTimeout(() => { if(toast.parentNode) toast.remove(); }, 5000);
-            
             if(state.settings.soundEnabled) playSound(type === 'error' ? 'error' : 'pop');
         };
 
         const playSound = (type = 'pop') => {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gainNode = ctx.createGain();
-                osc.connect(gainNode);
-                gainNode.connect(ctx.destination);
-                
+                const osc = ctx.createOscillator(); const gainNode = ctx.createGain();
+                osc.connect(gainNode); gainNode.connect(ctx.destination);
                 if(type === 'ding') {
                     osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime);
-                    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-                    gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
+                    gainNode.gain.setValueAtTime(0, ctx.currentTime); gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
                     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 1);
                 } else {
                     osc.type = 'triangle'; osc.frequency.setValueAtTime(400, ctx.currentTime);
-                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.1, ctx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
                     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
                 }
             } catch(e) {}
@@ -760,23 +700,14 @@
         // --- CUSTOM CONFIRM MODAL ---
         window.showConfirm = (title, message, onConfirm) => {
             const modal = document.getElementById('modal-confirm');
-            document.getElementById('confirm-title').innerText = title;
-            document.getElementById('confirm-message').innerText = message;
-            
-            const cancelBtn = document.getElementById('confirm-cancel');
-            const okBtn = document.getElementById('confirm-ok');
-            
+            document.getElementById('confirm-title').innerText = title; document.getElementById('confirm-message').innerText = message;
+            const cancelBtn = document.getElementById('confirm-cancel'); const okBtn = document.getElementById('confirm-ok');
             const close = () => modal.classList.add('hidden');
-            
-            cancelBtn.onclick = close;
-            okBtn.onclick = () => { close(); onConfirm(); };
-            
+            cancelBtn.onclick = close; okBtn.onclick = () => { close(); onConfirm(); };
             modal.classList.remove('hidden');
         };
 
-        const getFirebasePath = (col) => collection(db, 'artifacts', appId, 'users', currentUser.uid, col);
-
-        // --- STREAMING_CHUNK:Setting up Firebase Config and Auth Flow... ---
+        // --- FIREBASE INIT ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'studymaster-app';
         const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
@@ -790,359 +721,140 @@
         };
 
         let app, auth, db, currentUser = null;
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-            setTimeout(() => {
-                document.getElementById('app-loading').classList.add('hidden');
-                document.getElementById('auth-view').classList.remove('hidden');
-            }, 500);
+        try { app = initializeApp(firebaseConfig); auth = getAuth(app); db = getFirestore(app); } catch (e) {
+            console.error("Firebase Init Error:", e); setTimeout(() => { document.getElementById('app-loading').classList.add('hidden'); document.getElementById('auth-view').classList.remove('hidden'); }, 500);
         }
+
+        const getFirebasePath = (col) => collection(db, 'artifacts', appId, 'users', currentUser.uid, col);
 
         const initAuthFlow = async () => {
             if (!auth) return;
-            if (customToken) {
-                try {
-                    await signInWithCustomToken(auth, customToken);
-                } catch (tokenError) {
-                    console.warn("Token mismatch. Fallback to normal login UI.");
-                }
-            }
+            if (customToken) { try { await signInWithCustomToken(auth, customToken); } catch (e) {} }
         };
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('auth-view').classList.add('hidden');
-                document.getElementById('app-loading').classList.add('hidden');
-                document.getElementById('main-app').classList.remove('hidden');
-                
+                document.getElementById('auth-view').classList.add('hidden'); document.getElementById('app-loading').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden');
                 const emailStr = user.isAnonymous ? 'Guest User' : (user.email || 'User');
-                document.getElementById('nav-user-name').innerText = emailStr.split('@')[0];
-                document.getElementById('dash-user-name').innerText = emailStr.split('@')[0];
+                document.getElementById('nav-user-name').innerText = emailStr.split('@')[0]; document.getElementById('dash-user-name').innerText = emailStr.split('@')[0];
                 document.getElementById('user-avatar-initials').innerText = emailStr.charAt(0).toUpperCase();
                 
-                await loadUserData();
-                setupRealtimeListeners();
-                updateAllUI();
-                lucide.createIcons();
-                restoreTimerStateFromLocalStorage();
+                await loadUserData(); setupRealtimeListeners(); updateAllUI(); lucide.createIcons();
             } else {
-                currentUser = null;
-                document.getElementById('main-app').classList.add('hidden');
-                document.getElementById('app-loading').classList.add('hidden');
-                document.getElementById('auth-view').classList.remove('hidden');
+                currentUser = null; document.getElementById('main-app').classList.add('hidden'); document.getElementById('app-loading').classList.add('hidden'); document.getElementById('auth-view').classList.remove('hidden');
             }
         });
 
-        // Toggle Sign In / Sign Up Mode
+        // --- AUTH UI LOGIC ---
         let isSignUpMode = false;
-        const authTitle = document.getElementById('auth-title');
-        const authSubtitle = document.getElementById('auth-subtitle');
-        const authSubmitBtn = document.getElementById('auth-submit-btn');
-        const authToggleBtn = document.getElementById('auth-toggle-btn');
-
-        if (authToggleBtn) {
-            authToggleBtn.addEventListener('click', () => {
-                isSignUpMode = !isSignUpMode;
-                if (isSignUpMode) {
-                    authTitle.innerText = "Create an Account";
-                    authSubtitle.innerText = "Start your productivity journey";
-                    authSubmitBtn.innerText = "Sign Up";
-                    authToggleBtn.innerText = "Already have an account? Sign In";
-                } else {
-                    authTitle.innerText = "Welcome to StudyMaster";
-                    authSubtitle.innerText = "Your premium productivity workspace";
-                    authSubmitBtn.innerText = "Sign In";
-                    authToggleBtn.innerText = "Don't have an account? Sign Up";
-                }
-            });
-        }
+        document.getElementById('auth-toggle-btn')?.addEventListener('click', () => {
+            isSignUpMode = !isSignUpMode;
+            document.getElementById('auth-title').innerText = isSignUpMode ? "Create an Account" : "Welcome to StudyMaster";
+            document.getElementById('auth-submit-btn').innerText = isSignUpMode ? "Sign Up" : "Sign In";
+            document.getElementById('auth-toggle-btn').innerText = isSignUpMode ? "Already have an account? Sign In" : "Don't have an account? Sign Up";
+        });
 
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const em = document.getElementById('auth-email').value;
-            const pw = document.getElementById('auth-password').value;
-            
+            const em = document.getElementById('auth-email').value; const pw = document.getElementById('auth-password').value;
             if (pw.length < 6) return showToast("Password must be at least 6 characters.", "warning");
-
             try {
-                if (isSignUpMode) {
-                    await createUserWithEmailAndPassword(auth, em, pw);
-                    showToast("Account created successfully!", "success");
-                } else {
-                    await signInWithEmailAndPassword(auth, em, pw);
-                    showToast("Welcome back!", "success");
-                }
-            } catch (err) {
-                let msg = err.message;
-                if (err.code === 'auth/invalid-credential') msg = "Invalid email or password.";
-                if (err.code === 'auth/email-already-in-use') msg = "An account with this email already exists.";
-                showToast(msg, "error");
-            }
+                if (isSignUpMode) { await createUserWithEmailAndPassword(auth, em, pw); showToast("Account created successfully!", "success"); } 
+                else { await signInWithEmailAndPassword(auth, em, pw); showToast("Welcome back!", "success"); }
+            } catch (err) { showToast(err.message, "error"); }
         });
 
-        const btnGoogleLogin = document.getElementById('btn-google-login');
-        if (btnGoogleLogin) {
-            btnGoogleLogin.addEventListener('click', async () => {
-                try {
-                    const provider = new GoogleAuthProvider();
-                    await signInWithPopup(auth, provider);
-                    showToast("Signed in with Google", "success");
-                } catch(e) { showToast("Google sign in failed or was cancelled.", "error"); }
-            });
-        }
-
-        document.getElementById('btn-guest-login').addEventListener('click', async () => {
-            try { await signInAnonymously(auth); } catch(e) { showToast("Guest login failed", "error"); }
+        document.getElementById('btn-google-login')?.addEventListener('click', async () => {
+            try { const provider = new GoogleAuthProvider(); await signInWithPopup(auth, provider); showToast("Signed in", "success"); } catch(e) {}
         });
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            clearUnsubscribers(); signOut(auth);
-        });
+        document.getElementById('btn-guest-login').addEventListener('click', async () => { try { await signInAnonymously(auth); } catch(e) {} });
+        document.getElementById('btn-logout').addEventListener('click', () => { clearUnsubscribers(); signOut(auth); });
 
-        // --- STREAMING_CHUNK:Firebase Sync Logic... ---
+        // --- FIREBASE SYNC & LISTENER LOGIC ---
         const loadUserData = async () => {
             try {
-                const settingsRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile');
-                const docSnap = await getDoc(settingsRef);
+                const docSnap = await getDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile'));
                 if (docSnap.exists()) state.settings = { ...state.settings, ...docSnap.data() };
-                else await setDoc(settingsRef, state.settings);
             } catch (e) { console.warn("Load data error:", e); }
         };
 
         const setupRealtimeListeners = () => {
             clearUnsubscribers();
-            
             const unsubS = onSnapshot(query(getFirebasePath('sessions')), (snapshot) => {
-                state.sessions = [];
-                snapshot.forEach(doc => state.sessions.push({ id: doc.id, ...doc.data() }));
+                state.sessions = []; snapshot.forEach(doc => state.sessions.push({ id: doc.id, ...doc.data() }));
                 state.sessions.sort((a,b) => new Date(b.date) - new Date(a.date));
                 updateDashboard(); renderHistory(); updateCharts(); renderSubjects(); renderDailyAnalysis(); renderCalendar();
             });
-            
             const unsubP = onSnapshot(query(getFirebasePath('planner')), (snapshot) => {
-                state.planner = [];
-                snapshot.forEach(doc => state.planner.push({ id: doc.id, ...doc.data() }));
+                state.planner = []; snapshot.forEach(doc => state.planner.push({ id: doc.id, ...doc.data() }));
                 renderCalendar(); renderDailyAnalysis();
             });
-
             const unsubSub = onSnapshot(query(getFirebasePath('subjects')), (snapshot) => {
-                state.subjects = [];
-                snapshot.forEach(doc => state.subjects.push({ id: doc.id, ...doc.data() }));
+                state.subjects = []; snapshot.forEach(doc => state.subjects.push({ id: doc.id, ...doc.data() }));
                 updateSubjectDropdowns(); renderSubjects();
             });
-
             state.unsubscribers.push(unsubS, unsubP, unsubSub);
         };
 
-        const clearUnsubscribers = () => {
-            state.unsubscribers.forEach(unsub => unsub());
-            state.unsubscribers = [];
-        };
+        const clearUnsubscribers = () => { state.unsubscribers.forEach(unsub => unsub()); state.unsubscribers = []; };
 
         const updateSubjectDropdowns = () => {
             const selects = [document.getElementById('timer-subject'), document.getElementById('task-subject')];
             const filter = document.getElementById('history-filter');
-            
             let html = `<option value="General Study">General Study</option>`;
             let fHtml = `<option value="all">All Subjects</option><option value="General Study">General Study</option>`;
-            
-            state.subjects.forEach(sub => {
-                html += `<option value="${sub.name}">${sub.name}</option>`;
-                fHtml += `<option value="${sub.name}">${sub.name}</option>`;
-            });
-            
-            selects.forEach(s => { if(s) s.innerHTML = html; });
-            if(filter) filter.innerHTML = fHtml;
+            state.subjects.forEach(sub => { html += `<option value="${sub.name}">${sub.name}</option>`; fHtml += `<option value="${sub.name}">${sub.name}</option>`; });
+            selects.forEach(s => { if(s) s.innerHTML = html; }); if(filter) filter.innerHTML = fHtml;
         };
 
-        // --- STREAMING_CHUNK:UI View Routing Logic... ---
+        // --- UI VIEW SWITCHING ---
         window.switchView = (viewId) => {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 if(btn.dataset.target) {
-                    if(btn.dataset.target === viewId) {
-                        btn.classList.add('bg-slate-800', 'text-white'); btn.classList.remove('text-slate-300');
-                    } else {
-                        btn.classList.remove('bg-slate-800', 'text-white'); btn.classList.add('text-slate-300');
-                    }
+                    if(btn.dataset.target === viewId) { btn.classList.add('bg-slate-800', 'text-white'); btn.classList.remove('text-slate-300'); } 
+                    else { btn.classList.remove('bg-slate-800', 'text-white'); btn.classList.add('text-slate-300'); }
                 }
             });
-
             if(viewId === 'view-analytics') setTimeout(renderCharts, 100);
             if(viewId === 'view-subjects') renderSubjects();
             if(viewId === 'view-history') renderHistory();
             if(viewId === 'view-calendar') { renderCalendar(); renderDailyAnalysis(); }
-
             const titles = { 'view-dashboard': 'Dashboard', 'view-timer': 'Study Session', 'view-calendar': 'Calendar & Planner', 'view-subjects': 'Subjects & Goals', 'view-analytics': 'Analytics', 'view-history': 'History', 'view-settings': 'Settings' };
             document.getElementById('topbar-title').innerText = titles[viewId] || 'StudyMaster';
         };
 
         document.getElementById('nav-links').addEventListener('click', (e) => {
-            const btn = e.target.closest('.nav-btn');
-            if(btn && btn.dataset.target) switchView(btn.dataset.target);
+            const btn = e.target.closest('.nav-btn'); if(btn && btn.dataset.target) switchView(btn.dataset.target);
         });
         document.querySelector('[data-target="view-settings"]').addEventListener('click', () => switchView('view-settings'));
 
-        // --- STREAMING_CHUNK:Timer Core Logic & Custom Goals... ---
+        // --- TIMER CORE LOGIC ---
         const TIMER_MODES = { pomodoro: 25 * 60, shortbreak: 5 * 60, longbreak: 15 * 60, stopwatch: 0, custom: 60 * 60 };
-        const timerDisplay = document.getElementById('timer-display');
-        const timerRing = document.getElementById('timer-ring');
         
         const updateTimerUI = () => {
-            const h = Math.floor(state.timer.timeLeft / 3600);
-            const m = Math.floor((state.timer.timeLeft % 3600) / 60);
-            const s = state.timer.timeLeft % 60;
-            
-            const displayStr = `${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            timerDisplay.innerText = displayStr;
-            
-            if (state.timer.mode === 'stopwatch') {
-                timerRing.style.strokeDashoffset = 0;
-            } else {
-                const total = TIMER_MODES[state.timer.mode];
+            const h = Math.floor(state.timer.timeLeft / 3600); const m = Math.floor((state.timer.timeLeft % 3600) / 60); const s = state.timer.timeLeft % 60;
+            document.getElementById('timer-display').innerText = `${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            if (state.timer.mode === 'stopwatch') document.getElementById('timer-ring').style.strokeDashoffset = 0;
+            else {
+                const total = TIMER_MODES[state.timer.mode] || 1;
                 const percent = ((total - state.timer.timeLeft) / total) * 100;
-                timerRing.style.strokeDashoffset = 283 - (percent / 100) * 283;
+                document.getElementById('timer-ring').style.strokeDashoffset = 283 - (percent / 100) * 283;
             }
         };
 
-        const getTimerKey = (key) => currentUser ? `sm_timer_${currentUser.uid}_${key}` : `sm_timer_guest_${key}`;
-
-        const saveTimerStateToLocalStorage = () => {
-            const uidKey = (key) => getTimerKey(key);
-            localStorage.setItem(uidKey('isRunning'), state.timer.isRunning);
-            localStorage.setItem(uidKey('startTime'), state.timer.startTime || '');
-            localStorage.setItem(uidKey('baseTimeLeft'), state.timer.baseTimeLeft);
-            localStorage.setItem(uidKey('baseAccumulated'), state.timer.baseAccumulated);
-            localStorage.setItem(uidKey('timeLeft'), state.timer.timeLeft);
-            localStorage.setItem(uidKey('accumulatedSeconds'), state.timer.accumulatedSeconds);
-            localStorage.setItem(uidKey('mode'), state.timer.mode);
-            localStorage.setItem(uidKey('actualStartTime'), state.timer.actualStartTime || '');
-            
-            const subSelect = document.getElementById('timer-subject');
-            localStorage.setItem(uidKey('subject'), subSelect ? subSelect.value : 'General Study');
-            
-            const notesArea = document.getElementById('timer-notes');
-            localStorage.setItem(uidKey('notes'), notesArea ? notesArea.value : '');
-            localStorage.setItem(uidKey('suspendedSession'), state.timer.suspendedSession ? JSON.stringify(state.timer.suspendedSession) : '');
-        };
-
-        const clearTimerStateFromLocalStorage = () => {
-            const uidKey = (key) => getTimerKey(key);
-            localStorage.removeItem(uidKey('isRunning'));
-            localStorage.removeItem(uidKey('startTime'));
-            localStorage.removeItem(uidKey('baseTimeLeft'));
-            localStorage.removeItem(uidKey('baseAccumulated'));
-            localStorage.removeItem(uidKey('timeLeft'));
-            localStorage.removeItem(uidKey('accumulatedSeconds'));
-            localStorage.removeItem(uidKey('subject'));
-            localStorage.removeItem(uidKey('notes'));
-            localStorage.removeItem(uidKey('suspendedSession'));
-            localStorage.removeItem(uidKey('actualStartTime'));
-        };
-
-        const restoreTimerStateFromLocalStorage = () => {
-            const uidKey = (key) => getTimerKey(key);
-            const isRunning = localStorage.getItem(uidKey('isRunning')) === 'true';
-            if (!isRunning) {
-                const savedMode = localStorage.getItem(uidKey('mode'));
-                if (savedMode) {
-                    state.timer.mode = savedMode;
-                    state.timer.timeLeft = parseInt(localStorage.getItem(uidKey('timeLeft'))) || TIMER_MODES[savedMode];
-                    state.timer.accumulatedSeconds = parseInt(localStorage.getItem(uidKey('accumulatedSeconds'))) || 0;
-                }
-                const savedSuspended = localStorage.getItem(uidKey('suspendedSession'));
-                if (savedSuspended && savedSuspended !== 'undefined') state.timer.suspendedSession = JSON.parse(savedSuspended);
-                updateTimerUI();
-                return;
-            }
-
-            const startTime = parseInt(localStorage.getItem(uidKey('startTime')));
-            const baseTimeLeft = parseInt(localStorage.getItem(uidKey('baseTimeLeft'))) || 0;
-            const baseAccumulated = parseInt(localStorage.getItem(uidKey('baseAccumulated'))) || 0;
-            const mode = localStorage.getItem(uidKey('mode')) || 'pomodoro';
-            const subject = localStorage.getItem(uidKey('subject')) || 'General Study';
-            const notes = localStorage.getItem(uidKey('notes')) || '';
-            const savedSuspended = localStorage.getItem(uidKey('suspendedSession'));
-            const actualStart = localStorage.getItem(uidKey('actualStartTime'));
-
-            state.timer.mode = mode;
-            if (actualStart) state.timer.actualStartTime = actualStart;
-            if (savedSuspended && savedSuspended !== 'undefined') state.timer.suspendedSession = JSON.parse(savedSuspended);
-
-            const subSelect = document.getElementById('timer-subject');
-            if (subSelect && Array.from(subSelect.options).some(opt => opt.value === subject)) {
-                subSelect.value = subject;
-            }
-            const notesArea = document.getElementById('timer-notes');
-            if (notesArea) notesArea.value = notes;
-
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-
-            if (mode === 'stopwatch') {
-                state.timer.timeLeft = baseTimeLeft + elapsed;
-                state.timer.accumulatedSeconds = baseAccumulated + elapsed;
-                state.timer.startTime = startTime;
-                state.timer.baseTimeLeft = baseTimeLeft;
-                state.timer.baseAccumulated = baseAccumulated;
-                startTimer();
-            } else {
-                if (elapsed >= baseTimeLeft) {
-                    state.timer.timeLeft = 0;
-                    state.timer.accumulatedSeconds = baseAccumulated + baseTimeLeft;
-                    updateTimerUI();
-                    clearTimerStateFromLocalStorage();
-                    
-                    playSound('ding');
-                    showToast(`Focus session on "${subject}" completed while you were away!`, "success");
-                    
-                    const data = {
-                        date: new Date().toISOString(),
-                        startTime: state.timer.actualStartTime || new Date(Date.now() - baseTimeLeft * 1000).toISOString(),
-                        duration: Math.floor(state.timer.accumulatedSeconds / 60),
-                        subject: subject,
-                        notes: notes + " (Completed in background)",
-                        mode: mode,
-                        completed: true
-                    };
-                    
-                    addDoc(getFirebasePath('sessions'), data).then(() => {
-                        resetTimer();
-                    }).catch(e => console.error("Error saving bg session:", e));
-                } else {
-                    state.timer.timeLeft = baseTimeLeft - elapsed;
-                    state.timer.accumulatedSeconds = baseAccumulated + elapsed;
-                    state.timer.startTime = startTime;
-                    state.timer.baseTimeLeft = baseTimeLeft;
-                    state.timer.baseAccumulated = baseAccumulated;
-                    startTimer();
-                }
-            }
-        };
-
-        // Timer Session Suspension & Resuming handlers
         const suspendActiveStudySession = () => {
             if (state.timer.mode === 'pomodoro' || state.timer.mode === 'custom') {
-                const totalFocusDuration = TIMER_MODES[state.timer.mode];
-                if (state.timer.timeLeft < totalFocusDuration) {
-                    state.timer.suspendedSession = {
-                        timeLeft: state.timer.timeLeft,
-                        accumulatedSeconds: state.timer.accumulatedSeconds,
-                        mode: state.timer.mode,
-                        subject: document.getElementById('timer-subject').value,
-                        notes: document.getElementById('timer-notes').value,
-                        actualStartTime: state.timer.actualStartTime
-                    };
-                    const resumeBtn = document.getElementById('timer-resume-suspended');
-                    if (resumeBtn) resumeBtn.classList.remove('hidden');
-                    showToast(`Study focus suspended (${Math.floor(state.timer.timeLeft / 60)}m left). Break loaded!`, "info");
-                }
+                state.timer.suspendedSession = {
+                    timeLeft: state.timer.timeLeft, accumulatedSeconds: state.timer.accumulatedSeconds,
+                    mode: state.timer.mode, actualStartTime: state.timer.actualStartTime,
+                    subject: document.getElementById('timer-subject').value, notes: document.getElementById('timer-notes').value
+                };
+                document.getElementById('timer-resume-suspended').classList.remove('hidden');
+                showToast(`Focus paused. Rest up!`, "info");
             }
         };
 
@@ -1151,68 +863,47 @@
             if (state.timer.isRunning) window.stopTimer();
 
             const session = state.timer.suspendedSession;
-            state.timer.mode = session.mode;
-            state.timer.timeLeft = session.timeLeft;
-            state.timer.accumulatedSeconds = session.accumulatedSeconds;
-            state.timer.actualStartTime = session.actualStartTime || null;
+            state.timer.mode = session.mode; state.timer.timeLeft = session.timeLeft; 
+            state.timer.accumulatedSeconds = session.accumulatedSeconds; state.timer.actualStartTime = session.actualStartTime;
 
-            const subDropdown = document.getElementById('timer-subject');
-            if (subDropdown) subDropdown.value = session.subject;
-            const notesArea = document.getElementById('timer-notes');
-            if (notesArea) notesArea.value = session.notes;
+            document.getElementById('timer-subject').value = session.subject;
+            document.getElementById('timer-notes').value = session.notes;
 
             state.timer.suspendedSession = null;
-            const resumeBtn = document.getElementById('timer-resume-suspended');
-            if (resumeBtn) resumeBtn.classList.add('hidden');
+            document.getElementById('timer-resume-suspended').classList.add('hidden');
 
-            document.querySelectorAll('[id^="mode-"]').forEach(el => { 
-                el.classList.remove('bg-primary-600', 'text-white'); 
-                el.classList.add('text-slate-400'); 
-            });
+            document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
             const activeBtn = document.getElementById(`mode-${state.timer.mode}`);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-slate-400');
-                activeBtn.classList.add('bg-primary-600', 'text-white');
-            }
+            if (activeBtn) { activeBtn.classList.remove('text-slate-400'); activeBtn.classList.add('bg-primary-600', 'text-white'); }
 
-            const statusMap = {pomodoro: 'Focus Time', custom: 'Custom Goal'};
-            document.getElementById('timer-status').innerText = statusMap[state.timer.mode] || 'Focus Time';
-
-            updateTimerUI();
-            showToast("Focus session resumed exactly where you left off!", "success");
+            document.getElementById('timer-status').innerText = state.timer.mode === 'pomodoro' ? 'Focus Time' : 'Custom Goal';
+            updateTimerUI(); showToast("Focus session resumed exactly where you left off!", "success");
             window.startTimer();
         };
 
         window.switchTimerMode = (mode) => {
-            if (state.timer.isRunning) {
-                window.stopTimer();
-            }
+            if (state.timer.isRunning) window.stopTimer();
+            if (mode === 'shortbreak' || mode === 'longbreak') suspendActiveStudySession();
 
-            if (mode === 'shortbreak' || mode === 'longbreak') {
-                suspendActiveStudySession();
-            }
-
-            state.timer.mode = mode; 
+            state.timer.mode = mode;
             
             if (mode === 'custom') {
                 const subject = document.getElementById('timer-subject').value;
-                const todayStr = new Date().toLocaleDateString('sv-SE');
+                const todayStr = new Date().toLocaleDateString('sv-SE'); // Safe formatting for ISO
                 const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
                 
-                let hours = 1;
-                if (plannedTask) {
-                    hours = plannedTask.hours;
-                    TIMER_MODES['custom'] = Math.floor(hours * 3600);
-                    showToast(`Auto-loaded planned task goal: ${hours} hours for ${subject}`, "success");
-                }
+                let hours = parseFloat(document.getElementById('timer-custom-hours').value) || 1;
+                if (plannedTask) { hours = plannedTask.hours; showToast(`Loaded planned goal: ${hours}h`, "success"); }
                 document.getElementById('timer-custom-hours').value = hours;
+                TIMER_MODES['custom'] = Math.floor(hours * 3600);
+                document.getElementById('custom-presets-container').classList.remove('hidden');
+            } else {
+                document.getElementById('custom-presets-container').classList.add('hidden');
             }
 
-            state.timer.timeLeft = TIMER_MODES[mode]; 
-            state.timer.accumulatedSeconds = 0;
+            state.timer.timeLeft = TIMER_MODES[mode]; state.timer.accumulatedSeconds = 0;
             
             document.querySelectorAll('[id^="mode-"]').forEach(el => { el.classList.remove('bg-primary-600', 'text-white'); el.classList.add('text-slate-400'); });
-            
             const modeBtn = document.getElementById(`mode-${mode}`);
             if (modeBtn) { modeBtn.classList.remove('text-slate-400'); modeBtn.classList.add('bg-primary-600', 'text-white'); }
             
@@ -1228,79 +919,40 @@
         document.getElementById('mode-stopwatch').onclick = () => switchTimerMode('stopwatch');
 
         document.getElementById('timer-subject').addEventListener('change', (e) => {
-            const subject = e.target.value;
-            let hours = 1;
-            
-            const todayStr = new Date().toLocaleDateString('sv-SE');
+            const subject = e.target.value; let hours = 1;
+            const todayStr = new Date().toISOString().split('T')[0];
             const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
-            if (plannedTask) {
-                hours = plannedTask.hours;
-                showToast(`Auto-loaded planned task: ${hours}h for ${subject}`, "success");
-            }
+            if (plannedTask) { hours = plannedTask.hours; showToast(`Auto-loaded planned task: ${hours}h`, "success"); }
             
-            document.getElementById('timer-custom-hours').value = hours;
-            TIMER_MODES['custom'] = Math.floor(hours * 3600);
-            
-            if (state.timer.mode === 'custom') {
-                state.timer.timeLeft = TIMER_MODES['custom'];
-                updateTimerUI();
-            }
+            document.getElementById('timer-custom-hours').value = hours; TIMER_MODES['custom'] = Math.floor(hours * 3600);
+            if (state.timer.mode === 'custom') { state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); }
         });
 
         document.getElementById('timer-custom-hours').addEventListener('input', (e) => {
             const hours = parseFloat(e.target.value) || 0;
             if (hours > 0) {
                 TIMER_MODES['custom'] = Math.floor(hours * 3600);
-                if (state.timer.mode === 'custom' && !state.timer.isRunning) {
-                    state.timer.timeLeft = TIMER_MODES['custom'];
-                    updateTimerUI();
-                }
+                if (state.timer.mode === 'custom' && !state.timer.isRunning) { state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); }
             }
         });
 
-        // Quick Preset Trigger Handlers
-        document.getElementById('preset-break-short').addEventListener('click', () => {
-            document.getElementById('timer-custom-hours').value = 0.0833;
-            TIMER_MODES['custom'] = 5 * 60;
-            switchTimerMode('custom');
-            showToast("Presets Loaded: 5m Short Break", "info");
-        });
-
-        document.getElementById('preset-break-long').addEventListener('click', () => {
-            document.getElementById('timer-custom-hours').value = 0.25;
-            TIMER_MODES['custom'] = 15 * 60;
-            switchTimerMode('custom');
-            showToast("Presets Loaded: 15m Long Break", "info");
-        });
-
-        document.getElementById('preset-study-1h').addEventListener('click', () => {
-            document.getElementById('timer-custom-hours').value = 1;
-            TIMER_MODES['custom'] = 60 * 60;
-            switchTimerMode('custom');
-            showToast("Presets Loaded: 1h Focus block", "info");
-        });
+        // Quick Custom Presets
+        document.getElementById('preset-break-short').onclick = () => { document.getElementById('timer-custom-hours').value = 0.0833; TIMER_MODES['custom'] = 5*60; state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); };
+        document.getElementById('preset-break-long').onclick = () => { document.getElementById('timer-custom-hours').value = 0.25; TIMER_MODES['custom'] = 15*60; state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); };
+        document.getElementById('preset-focus-1h').onclick = () => { document.getElementById('timer-custom-hours').value = 1; TIMER_MODES['custom'] = 60*60; state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); };
 
         window.startTaskSession = (subject, hours) => {
             if(state.timer.isRunning) return showToast("Please pause current timer to switch tasks.", "warning");
-            
-            // Clear suspended study states when launching a new plan focus
-            state.timer.suspendedSession = null;
-            const resumeBtn = document.getElementById('timer-resume-suspended');
-            if (resumeBtn) resumeBtn.classList.add('hidden');
-
+            state.timer.suspendedSession = null; document.getElementById('timer-resume-suspended').classList.add('hidden');
             switchView('view-timer');
             
             const subjectSelect = document.getElementById('timer-subject');
-            if (Array.from(subjectSelect.options).some(opt => opt.value === subject)) {
-                subjectSelect.value = subject;
-            } else {
-                subjectSelect.value = 'General Study'; 
-            }
+            if (Array.from(subjectSelect.options).some(opt => opt.value === subject)) subjectSelect.value = subject;
+            else subjectSelect.value = 'General Study'; 
 
-            document.getElementById('timer-custom-hours').value = hours;
-            TIMER_MODES['custom'] = Math.floor(hours * 3600);
-            switchTimerMode('custom');
-            showToast(`Ready to focus on ${subject} for ${hours}h!`, "info");
+            document.getElementById('timer-custom-hours').value = hours; TIMER_MODES['custom'] = Math.floor(hours * 3600);
+            switchTimerMode('custom'); showToast(`Ready to focus on ${subject} for ${hours}h!`, "info");
+            setTimeout(() => { window.startTimer(); }, 500); // Auto start
         };
 
         const updateTimerFromTimestamp = () => {
@@ -1315,20 +967,14 @@
                 state.timer.accumulatedSeconds = state.timer.baseAccumulated + Math.min(state.timer.baseTimeLeft, elapsed);
                 
                 if (state.timer.timeLeft <= 0) {
-                    window.stopTimer();
-                    playSound('ding'); 
+                    window.stopTimer(); playSound('ding'); 
                     if (state.timer.mode === 'pomodoro' || state.timer.mode === 'custom') {
                         saveSession(true);
                     } else {
-                        // Check if a suspended session is waiting to be resumed
                         if (state.timer.suspendedSession) {
-                            showToast("Break complete! Resuming your focus session...", "success");
-                            setTimeout(() => {
-                                window.resumeSuspendedSession();
-                            }, 1000);
-                        } else {
-                            showToast("Break complete!", "success");
-                        }
+                            showToast("Break complete! Auto-resuming focus session...", "success");
+                            setTimeout(() => { window.resumeSuspendedSession(); }, 1000);
+                        } else { showToast("Break complete!", "success"); }
                     }
                     return;
                 }
@@ -1336,26 +982,15 @@
             updateTimerUI();
         };
 
-        const tick = () => {
-            updateTimerFromTimestamp();
-        };
+        const tick = () => { updateTimerFromTimestamp(); };
 
         window.startTimer = () => {
             if(!state.timer.isRunning) {
-                if (state.timer.accumulatedSeconds === 0 && !state.timer.actualStartTime) {
-                    state.timer.actualStartTime = new Date().toISOString();
-                }
+                if (state.timer.accumulatedSeconds === 0 && !state.timer.actualStartTime) state.timer.actualStartTime = new Date().toISOString();
+                state.timer.startTime = Date.now(); state.timer.baseTimeLeft = state.timer.timeLeft; state.timer.baseAccumulated = state.timer.accumulatedSeconds;
 
-                state.timer.startTime = Date.now();
-                state.timer.baseTimeLeft = state.timer.timeLeft;
-                state.timer.baseAccumulated = state.timer.accumulatedSeconds;
-
-                state.timer.isRunning = true;
-                state.timer.interval = setInterval(tick, 1000);
-                document.getElementById('timer-start').classList.add('hidden');
-                document.getElementById('timer-pause').classList.remove('hidden');
-                document.getElementById('timer-end').classList.remove('hidden');
-                saveTimerStateToLocalStorage();
+                state.timer.isRunning = true; state.timer.interval = setInterval(tick, 1000);
+                document.getElementById('timer-start').classList.add('hidden'); document.getElementById('timer-pause').classList.remove('hidden'); document.getElementById('timer-end').classList.remove('hidden');
             }
         };
 
@@ -1363,65 +998,52 @@
             if (state.timer.isRunning && state.timer.startTime) {
                 const elapsed = Math.floor((Date.now() - state.timer.startTime) / 1000);
                 if (state.timer.mode === 'stopwatch') {
-                    state.timer.timeLeft = state.timer.baseTimeLeft + elapsed;
-                    state.timer.accumulatedSeconds = state.timer.baseAccumulated + elapsed;
+                    state.timer.timeLeft = state.timer.baseTimeLeft + elapsed; state.timer.accumulatedSeconds = state.timer.baseAccumulated + elapsed;
                 } else {
-                    state.timer.timeLeft = Math.max(0, state.timer.baseTimeLeft - elapsed);
-                    state.timer.accumulatedSeconds = state.timer.baseAccumulated + Math.min(state.timer.baseTimeLeft, elapsed);
+                    state.timer.timeLeft = Math.max(0, state.timer.baseTimeLeft - elapsed); state.timer.accumulatedSeconds = state.timer.baseAccumulated + Math.min(state.timer.baseTimeLeft, elapsed);
                 }
             }
-            clearInterval(state.timer.interval);
-            state.timer.isRunning = false;
-            state.timer.startTime = null;
-            document.getElementById('timer-start').classList.remove('hidden');
-            document.getElementById('timer-pause').classList.add('hidden');
-            saveTimerStateToLocalStorage();
+            clearInterval(state.timer.interval); state.timer.isRunning = false; state.timer.startTime = null;
+            document.getElementById('timer-start').classList.remove('hidden'); document.getElementById('timer-pause').classList.add('hidden');
+            
+            // Auto resume if manually stopping a break
+            if ((state.timer.mode === 'shortbreak' || state.timer.mode === 'longbreak') && state.timer.suspendedSession) {
+                showToast("Break stopped early. Resuming focus...", "info"); window.resumeSuspendedSession();
+            }
         };
 
-        // Handle page visibility updates to instantly sync backgrounded tab clocks
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && state.timer.isRunning) {
-                updateTimerFromTimestamp();
-            }
-        });
+        document.addEventListener('visibilitychange', () => { if (!document.hidden && state.timer.isRunning) updateTimerFromTimestamp(); });
 
-        // --- STREAMING_CHUNK:Firebase Save Session & Point System... ---
         const saveSession = async (isCompleted = true) => {
             if (!currentUser) return;
             const durationMins = Math.floor(state.timer.accumulatedSeconds / 60);
             if (durationMins < 1) { showToast("Session too short to save.", "warning"); return resetTimer(); }
 
-            const endTime = new Date();
-            let startTimeStr = state.timer.actualStartTime;
-            if (!startTimeStr) {
-                const st = new Date(endTime.getTime() - (durationMins * 60000));
-                startTimeStr = st.toISOString();
+            let timeString = "";
+            if (state.timer.actualStartTime) {
+                const startD = new Date(state.timer.actualStartTime); const endD = new Date();
+                timeString = `${startD.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - ${endD.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
             }
 
+            const rawNotes = document.getElementById('timer-notes').value;
+            const finalNotes = timeString ? `[${timeString}] ${rawNotes}` : rawNotes;
+
             const data = {
-                date: endTime.toISOString(),
-                startTime: startTimeStr,
-                duration: durationMins,
-                subject: document.getElementById('timer-subject').value,
-                notes: document.getElementById('timer-notes').value,
-                mode: state.timer.mode,
-                completed: isCompleted // Points marker
+                date: new Date().toISOString(), duration: durationMins, subject: document.getElementById('timer-subject').value,
+                notes: finalNotes, mode: state.timer.mode, completed: isCompleted
             };
 
             try {
                 await addDoc(getFirebasePath('sessions'), data);
                 showToast(`Saved ${durationMins}m of study! ${isCompleted ? '+5 Points' : '-5 Points'}`, isCompleted ? "success" : "warning");
                 resetTimer();
-            } catch(e) { console.error("Error saving session:", e); }
+            } catch(e) { console.error("Error saving session:", e); showToast("Failed to save session.", "error"); }
         };
 
         const resetTimer = () => {
-            window.stopTimer(); 
+            window.stopTimer(); switchTimerMode(state.timer.mode);
+            document.getElementById('timer-end').classList.add('hidden'); document.getElementById('timer-notes').value = '';
             state.timer.actualStartTime = null;
-            switchTimerMode(state.timer.mode);
-            document.getElementById('timer-end').classList.add('hidden');
-            document.getElementById('timer-notes').value = '';
-            clearTimerStateFromLocalStorage();
         };
 
         document.getElementById('timer-start').onclick = startTimer;
@@ -1429,17 +1051,14 @@
         document.getElementById('timer-resume-suspended').onclick = () => window.resumeSuspendedSession();
         document.getElementById('timer-end').onclick = () => { 
             stopTimer(); 
-            showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => {
-                saveSession(false);
-            });
+            showConfirm("End Session Early?", "Ending early will save your progress but deduct 5 points.", () => { saveSession(false); });
         };
 
-        // --- STREAMING_CHUNK:Updating Dashboard & Score Logic... ---
+        // --- DASHBOARD & CHARTS LOGIC ---
         const updateAllUI = () => { updateDashboard(); renderSettings(); updateExamCountdown(); };
 
         const updateDashboard = () => {
-            const now = new Date();
-            let todayMins = 0, weekMins = 0;
+            const now = new Date(); let todayMins = 0, weekMins = 0;
             const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())); startOfWeek.setHours(0,0,0,0);
             const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
 
@@ -1450,8 +1069,7 @@
             if(uniqueDates.length > 0) {
                 for(let i=0; i<uniqueDates.length; i++) {
                     const diffDays = Math.floor((currentCheckDate - uniqueDates[i]) / (1000 * 60 * 60 * 24));
-                    if(diffDays === 0 || diffDays === 1) { streak++; currentCheckDate = uniqueDates[i]; } 
-                    else if (diffDays > 1) break;
+                    if(diffDays === 0 || diffDays === 1) { streak++; currentCheckDate = uniqueDates[i]; } else if (diffDays > 1) break;
                 }
             }
             maxStreak = Math.max(streak, state.settings.maxStreak || streak);
@@ -1460,11 +1078,8 @@
                 const sDate = new Date(s.date);
                 if (sDate >= startOfToday) todayMins += s.duration;
                 if (sDate >= startOfWeek) weekMins += s.duration;
-                
-                // Point calculation (default to true for legacy sessions)
                 const isCompleted = s.completed !== false; 
-                totalPoints += isCompleted ? 5 : -5;
-                possiblePoints += 5;
+                totalPoints += isCompleted ? 5 : -5; possiblePoints += 5;
             });
 
             document.getElementById('stat-today').innerText = `${Math.floor(todayMins/60)}h ${todayMins%60}m`;
@@ -1472,26 +1087,19 @@
             document.getElementById('stat-streak').innerText = streak;
             document.getElementById('stat-max-streak').innerText = maxStreak;
             
-            const scoreDisplay = document.getElementById('dash-score');
-            if(scoreDisplay) scoreDisplay.innerText = `${totalPoints} / ${possiblePoints}`;
-
+            const scoreDisplay = document.getElementById('dash-score'); if(scoreDisplay) scoreDisplay.innerText = `${totalPoints} / ${possiblePoints}`;
             const goalPct = state.settings.dailyGoal > 0 ? Math.min(100, Math.round(((todayMins/60) / state.settings.dailyGoal) * 100)) : 0;
-            document.getElementById('stat-goal-pct').innerText = goalPct + '%';
-            document.getElementById('stat-goal-bar').style.width = goalPct + '%';
+            document.getElementById('stat-goal-pct').innerText = goalPct + '%'; document.getElementById('stat-goal-bar').style.width = goalPct + '%';
 
-            const recentContainer = document.getElementById('recent-sessions-list');
-            recentContainer.innerHTML = '';
-            if(state.sessions.length === 0) {
-                recentContainer.innerHTML = '<p class="text-slate-400 text-sm">No recent sessions found.</p>';
-            } else {
+            const recentContainer = document.getElementById('recent-sessions-list'); recentContainer.innerHTML = '';
+            if(state.sessions.length === 0) { recentContainer.innerHTML = '<p class="text-slate-400 text-sm">No recent sessions found.</p>'; } 
+            else {
                 state.sessions.slice(0, 4).forEach(s => {
-                    const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-                    const timeDisplay = st ? `${st} • ` : '';
                     recentContainer.innerHTML += `
                     <div class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-800 transition">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-primary-500/10 text-primary-400 rounded-lg"><i data-lucide="book" class="w-4 h-4"></i></div>
-                            <div><p class="text-sm font-medium text-white">${s.subject}</p><p class="text-xs text-slate-400">${new Date(s.date).toLocaleDateString()} • ${timeDisplay}${s.notes || 'No notes'}</p></div>
+                            <div><p class="text-sm font-medium text-white">${s.subject}</p><p class="text-xs text-slate-400">${new Date(s.date).toLocaleDateString()} • ${s.notes || 'No notes'}</p></div>
                         </div>
                         <div class="text-right">
                             <span class="text-sm font-medium text-slate-300 block">${s.duration}m</span>
@@ -1516,36 +1124,23 @@
             widget.innerText = diffDays > 0 ? `${diffDays} Days` : 'Exam Passed';
         };
 
-        // --- STREAMING_CHUNK:Calendar & Planner Logic... ---
-        window.changeMonth = (dir) => {
-            state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + dir);
-            renderCalendar();
-        };
-
-        window.selectDate = (dateStr) => {
-            state.calendar.selectedDate = new Date(dateStr);
-            renderCalendar(); renderDailyAnalysis();
-        };
+        // --- CALENDAR LOGIC ---
+        window.changeMonth = (dir) => { state.calendar.currentDate.setMonth(state.calendar.currentDate.getMonth() + dir); renderCalendar(); };
+        window.selectDate = (dateStr) => { state.calendar.selectedDate = new Date(dateStr); renderCalendar(); renderDailyAnalysis(); };
 
         const renderCalendar = () => {
-            const year = state.calendar.currentDate.getFullYear();
-            const month = state.calendar.currentDate.getMonth();
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
+            const year = state.calendar.currentDate.getFullYear(); const month = state.calendar.currentDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate();
             document.getElementById('calendar-month-year').innerText = new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' });
             
             const grid = document.getElementById('calendar-grid-days'); grid.innerHTML = '';
             for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="p-4 border border-slate-800/30 opacity-30 bg-slate-900/10 rounded-lg"></div>`;
             
-            const todayStr = new Date().toISOString().split('T')[0];
-            const selStr = state.calendar.selectedDate.toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0]; const selStr = state.calendar.selectedDate.toISOString().split('T')[0];
 
             for(let i=1; i<=daysInMonth; i++) {
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                const hasTasks = state.planner.some(t => t.date === dateStr);
-                const hasSessions = state.sessions.some(s => s.date.startsWith(dateStr));
-                
+                const hasTasks = state.planner.some(t => t.date === dateStr); const hasSessions = state.sessions.some(s => s.date.startsWith(dateStr));
                 let indicators = '';
                 if(hasTasks) indicators += `<div class="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_5px_rgba(249,115,22,0.6)]"></div>`;
                 if(hasSessions) indicators += `<div class="w-1.5 h-1.5 rounded-full bg-primary-500 shadow-[0_0_5px_rgba(79,70,229,0.6)]"></div>`;
@@ -1564,19 +1159,12 @@
             document.getElementById('analysis-date-display').innerText = state.calendar.selectedDate.toLocaleDateString('default', { weekday: 'long', month: 'long', day: 'numeric' });
             document.getElementById('task-date').value = dateStr;
             
-            const today = new Date(); today.setHours(0,0,0,0);
-            const selectedTime = new Date(state.calendar.selectedDate); selectedTime.setHours(0,0,0,0);
+            const today = new Date(); today.setHours(0,0,0,0); const selectedTime = new Date(state.calendar.selectedDate); selectedTime.setHours(0,0,0,0);
             const btnAdd = document.getElementById('btn-add-task-cal');
-            if (btnAdd) {
-                if (selectedTime < today) btnAdd.style.display = 'none';
-                else btnAdd.style.display = 'flex';
-            }
+            if (btnAdd) { if (selectedTime < today) btnAdd.style.display = 'none'; else btnAdd.style.display = 'flex'; }
             
-            const dayTasks = state.planner.filter(t => t.date === dateStr);
-            const daySessions = state.sessions.filter(s => s.date.startsWith(dateStr));
-            
-            let totalMins = daySessions.reduce((acc, s) => acc + s.duration, 0);
-            document.getElementById('analysis-hours').innerText = `${Math.floor(totalMins/60)}h ${totalMins%60}m`;
+            const dayTasks = state.planner.filter(t => t.date === dateStr); const daySessions = state.sessions.filter(s => s.date.startsWith(dateStr));
+            let totalMins = daySessions.reduce((acc, s) => acc + s.duration, 0); document.getElementById('analysis-hours').innerText = `${Math.floor(totalMins/60)}h ${totalMins%60}m`;
             
             const tasksList = document.getElementById('analysis-tasks-list');
             if(dayTasks.length === 0) tasksList.innerHTML = '<p class="text-sm text-slate-500 italic">No tasks planned for this day.</p>';
@@ -1589,18 +1177,11 @@
 
             const sessList = document.getElementById('analysis-sessions-list');
             if(daySessions.length === 0) sessList.innerHTML = '<p class="text-sm text-slate-500 italic">No sessions completed.</p>';
-            else sessList.innerHTML = daySessions.map(s => {
-                const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' - ' : '';
-                const et = new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                return `
+            else sessList.innerHTML = daySessions.map(s => `
                 <div class="glass p-3 rounded-lg flex justify-between items-center">
-                    <div>
-                        <p class="text-sm font-medium text-white">${s.subject}</p>
-                        <p class="text-xs text-slate-400">${st}${et} • ${s.duration}m</p>
-                    </div>
+                    <div><p class="text-sm font-medium text-white">${s.subject}</p><p class="text-xs text-slate-400">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • ${s.duration}m</p></div>
                 </div>
-                `;
-            }).join('');
+            `).join('');
             lucide.createIcons();
         };
 
@@ -1608,46 +1189,25 @@
         window.closeTaskModal = () => document.getElementById('modal-add-task').classList.add('hidden');
         
         document.getElementById('form-add-task').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!currentUser) return;
-            const data = {
-                date: document.getElementById('task-date').value, subject: document.getElementById('task-subject').value,
-                hours: parseFloat(document.getElementById('task-hours').value), priority: document.getElementById('task-priority').value,
-                createdAt: new Date().toISOString()
-            };
-            try {
-                await addDoc(getFirebasePath('planner'), data);
-                closeTaskModal(); showToast("Task scheduled", "success");
-                e.target.reset(); renderDailyAnalysis();
-            } catch(e) { showToast("Error scheduling task", "error"); }
+            e.preventDefault(); if(!currentUser) return;
+            const data = { date: document.getElementById('task-date').value, subject: document.getElementById('task-subject').value, hours: parseFloat(document.getElementById('task-hours').value), priority: document.getElementById('task-priority').value, createdAt: new Date().toISOString() };
+            try { await addDoc(getFirebasePath('planner'), data); closeTaskModal(); showToast("Task scheduled", "success"); e.target.reset(); renderDailyAnalysis(); } catch(e) {}
         });
 
-        window.deleteTask = async (id) => {
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'planner', id)); showToast("Task removed", "info"); } catch(e) {}
-        };
+        window.deleteTask = async (id) => { try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'planner', id)); showToast("Task removed", "info"); } catch(e) {} };
 
-        // --- STREAMING_CHUNK:Subjects Management & Duplicate Check... ---
+        // --- SUBJECTS LOGIC ---
         window.openSubjectModal = () => document.getElementById('modal-add-subject').classList.remove('hidden');
         window.closeSubjectModal = () => document.getElementById('modal-add-subject').classList.add('hidden');
 
         document.getElementById('form-add-subject').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!currentUser) return;
+            e.preventDefault(); if(!currentUser) return;
             const subjectName = document.getElementById('subject-name').value.trim();
-            
-            const exists = state.subjects.some(sub => sub.name.toLowerCase() === subjectName.toLowerCase());
-            if (exists) return showToast("A subject with this name already exists.", "warning");
-            
-            const data = { name: subjectName, target: parseFloat(document.getElementById('subject-target').value), createdAt: new Date().toISOString() };
-            try {
-                await addDoc(getFirebasePath('subjects'), data);
-                closeSubjectModal(); showToast("Subject Added Successfully", "success"); e.target.reset();
-            } catch(e) { showToast("Error adding subject", "error"); }
+            if (state.subjects.some(sub => sub.name.toLowerCase() === subjectName.toLowerCase())) return showToast("A subject with this name already exists.", "warning");
+            try { await addDoc(getFirebasePath('subjects'), { name: subjectName, target: parseFloat(document.getElementById('subject-target').value), createdAt: new Date().toISOString() }); closeSubjectModal(); showToast("Subject Added Successfully", "success"); e.target.reset(); } catch(e) {}
         });
 
-        window.deleteSubject = async (id) => {
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'subjects', id)); showToast("Subject removed", "info"); } catch(e) {}
-        };
+        window.deleteSubject = async (id) => { try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'subjects', id)); showToast("Subject removed", "info"); } catch(e) {} };
 
         const renderSubjects = () => {
             const container = document.getElementById('subjects-container'); container.innerHTML = '';
@@ -1656,13 +1216,11 @@
                 lucide.createIcons(); return;
             }
 
-            const subjectStats = {};
-            state.subjects.forEach(s => subjectStats[s.id] = 0);
+            const subjectStats = {}; state.subjects.forEach(s => subjectStats[s.id] = 0);
             state.sessions.forEach(s => { const match = state.subjects.find(sub => s.subject === sub.name); if(match) subjectStats[match.id] += s.duration / 60; });
 
             state.subjects.forEach(sub => {
-                const current = subjectStats[sub.id] || 0;
-                const percent = sub.target > 0 ? Math.min(100, Math.round((current / sub.target) * 100)) : 0;
+                const current = subjectStats[sub.id] || 0; const percent = sub.target > 0 ? Math.min(100, Math.round((current / sub.target) * 100)) : 0;
                 const recentSess = state.sessions.filter(s => s.subject === sub.name).slice(0, 2);
                 let recentHtml = recentSess.length ? recentSess.map(s => `<p class="text-xs text-slate-400 truncate border-t border-slate-700/50 pt-2 mt-2">${new Date(s.date).toLocaleDateString()} • ${s.duration}m</p>`).join('') : '<p class="text-xs text-slate-500 italic mt-2 border-t border-slate-700/50 pt-2">No sessions yet.</p>';
 
@@ -1679,21 +1237,17 @@
             lucide.createIcons();
         };
 
-        // --- STREAMING_CHUNK:Subject Analytics Modal Logic... ---
+        // --- SUBJECT ANALYTICS ---
         let saCurrentSubject = null, saCurrentDate = new Date(), saSelectedDate = new Date();
-
         window.openSubjectAnalytics = (subjectId) => {
             const sub = state.subjects.find(s => s.id === subjectId); if(!sub) return;
             saCurrentSubject = sub; saCurrentDate = new Date(); saSelectedDate = new Date();
-            
-            document.getElementById('sa-title').innerText = `${sub.name} Analytics`;
-            document.getElementById('modal-subject-analytics').classList.remove('hidden');
+            document.getElementById('sa-title').innerText = `${sub.name} Analytics`; document.getElementById('modal-subject-analytics').classList.remove('hidden');
             
             const subSessions = state.sessions.filter(s => s.subject === sub.name);
             const totalMins = subSessions.reduce((acc, s) => acc + s.duration, 0);
             const dailyTotals = {}; subSessions.forEach(s => { const d = s.date.split('T')[0]; dailyTotals[d] = (dailyTotals[d] || 0) + s.duration; });
-            const dailyValues = Object.values(dailyTotals);
-            const maxMins = dailyValues.length ? Math.max(...dailyValues) : 0; const minMins = dailyValues.length ? Math.min(...dailyValues) : 0;
+            const dailyValues = Object.values(dailyTotals); const maxMins = dailyValues.length ? Math.max(...dailyValues) : 0; const minMins = dailyValues.length ? Math.min(...dailyValues) : 0;
 
             document.getElementById('sa-total-time').innerText = `${Math.floor(totalMins/60)}h ${totalMins%60}m`;
             document.getElementById('sa-max-time').innerText = `${Math.floor(maxMins/60)}h ${maxMins%60}m`;
@@ -1713,13 +1267,11 @@
             
             const grid = document.getElementById('sa-calendar-grid'); grid.innerHTML = '';
             for(let i=0; i<firstDay; i++) grid.innerHTML += `<div class="p-2 opacity-0"></div>`;
-            
             const selStr = saSelectedDate.toISOString().split('T')[0]; const todayStr = new Date().toISOString().split('T')[0];
 
             for(let i=1; i<=daysInMonth; i++) {
                 const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
                 const hasSessions = state.sessions.some(s => s.date.startsWith(dateStr) && s.subject === saCurrentSubject.name);
-                
                 grid.innerHTML += `
                 <div onclick="selectSADate('${dateStr}')" class="p-1 border ${selStr === dateStr ? 'border-primary-500 bg-primary-600/20' : 'border-slate-800/50 hover:bg-slate-800 glass'} rounded cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[40px]">
                     <span class="text-xs ${todayStr === dateStr ? 'text-primary-400 font-bold' : 'text-slate-300'}">${i}</span>
@@ -1734,29 +1286,22 @@
             document.getElementById('sa-selected-date').innerText = saSelectedDate.toLocaleDateString('default', { weekday: 'short', month: 'short', day: 'numeric' });
             
             const daySessions = state.sessions.filter(s => s.date.startsWith(dateStr) && s.subject === saCurrentSubject.name);
-            const totalMins = daySessions.reduce((acc, s) => acc + s.duration, 0);
-            document.getElementById('sa-day-total').innerText = `Total: ${Math.floor(totalMins/60)}h ${totalMins%60}m`;
+            const totalMins = daySessions.reduce((acc, s) => acc + s.duration, 0); document.getElementById('sa-day-total').innerText = `Total: ${Math.floor(totalMins/60)}h ${totalMins%60}m`;
             
             const sessList = document.getElementById('sa-day-sessions');
             if(daySessions.length === 0) sessList.innerHTML = '<p class="text-xs text-slate-500 italic">No sessions.</p>';
-            else sessList.innerHTML = daySessions.map(s => {
-                const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + ' - ' : '';
-                const et = new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                return `
+            else sessList.innerHTML = daySessions.map(s => `
                 <div class="bg-slate-900/50 p-2 rounded border border-slate-700/50">
-                    <p class="text-xs text-white">${st}${et} • <span class="text-primary-400 font-medium">${s.duration}m</span></p>
+                    <p class="text-xs text-white">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} • <span class="text-primary-400 font-medium">${s.duration}m</span></p>
                     ${s.notes ? `<p class="text-[10px] text-slate-400 mt-1 truncate">${s.notes}</p>` : ''}
                 </div>
-                `;
-            }).join('');
+            `).join('');
         };
 
-        // --- STREAMING_CHUNK:Global History & Charts logic... ---
+        // --- GLOBAL HISTORY & CHARTS ---
         const renderHistory = () => {
             const tbody = document.getElementById('history-table-body');
-            const term = document.getElementById('history-search').value.toLowerCase();
-            const filter = document.getElementById('history-filter').value;
-            
+            const term = document.getElementById('history-search').value.toLowerCase(); const filter = document.getElementById('history-filter').value;
             tbody.innerHTML = '';
             const filtered = state.sessions.filter(s => {
                 const matchSearch = (s.notes || '').toLowerCase().includes(term) || s.subject.toLowerCase().includes(term);
@@ -1768,14 +1313,9 @@
             else {
                 document.getElementById('history-empty').classList.add('hidden');
                 filtered.forEach(s => {
-                    const st = s.startTime ? new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown';
-                    const et = new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50 transition-colors">
-                        <td class="p-4 whitespace-nowrap text-sm text-slate-300">
-                            ${new Date(s.date).toLocaleDateString()} 
-                            <span class="text-slate-500 text-xs ml-1 block mt-0.5">${st} - ${et}</span>
-                        </td>
+                        <td class="p-4 whitespace-nowrap text-sm text-slate-300">${new Date(s.date).toLocaleDateString()} <span class="text-slate-500 text-xs ml-1">${new Date(s.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
                         <td class="p-4 text-sm font-medium text-white"><span class="bg-slate-800 px-2 py-1 rounded-md border border-slate-700">${s.subject}</span></td>
                         <td class="p-4 text-sm text-primary-400 font-medium">${s.duration} mins</td>
                         <td class="p-4 text-sm text-slate-400 max-w-[200px] truncate">${s.notes || '-'}</td>
@@ -1783,20 +1323,16 @@
                 });
             }
         };
-        document.getElementById('history-search').addEventListener('input', renderHistory);
-        document.getElementById('history-filter').addEventListener('change', renderHistory);
+        document.getElementById('history-search').addEventListener('input', renderHistory); document.getElementById('history-filter').addEventListener('change', renderHistory);
 
         let charts = {};
         const renderCharts = () => {
             Chart.defaults.color = '#94a3b8'; Chart.defaults.borderColor = 'rgba(255,255,255,0.05)'; Chart.defaults.font.family = 'Inter';
-
-            const now = new Date();
-            const last7Days = Array.from({length: 7}, (_, i) => { const d = new Date(now); d.setDate(d.getDate() - i); return d.toDateString(); }).reverse();
+            const now = new Date(); const last7Days = Array.from({length: 7}, (_, i) => { const d = new Date(now); d.setDate(d.getDate() - i); return d.toDateString(); }).reverse();
             const weeklyData = [0,0,0,0,0,0,0]; const subjectCounts = {}; const monthlyData = new Array(12).fill(0);
 
             state.sessions.forEach(s => {
-                const dateStr = new Date(s.date).toDateString();
-                const idx = last7Days.indexOf(dateStr);
+                const dateStr = new Date(s.date).toDateString(); const idx = last7Days.indexOf(dateStr);
                 if(idx !== -1) weeklyData[idx] += s.duration / 60;
                 subjectCounts[s.subject] = (subjectCounts[s.subject] || 0) + (s.duration/60);
                 if(new Date(s.date).getFullYear() === now.getFullYear()) monthlyData[new Date(s.date).getMonth()] += s.duration / 60;
@@ -1807,20 +1343,7 @@
             if(charts.bar) charts.bar.destroy();
             charts.bar = new Chart(document.getElementById('chart-bar-weekly').getContext('2d'), {
                 type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Hours', data: weeklyData, backgroundColor: '#4f46e5', borderRadius: 6, barPercentage: 0.6 }] },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0,
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { stepSize: 1, precision: 0 } } } }
             });
 
             if(charts.pie) charts.pie.destroy();
@@ -1832,20 +1355,7 @@
             if(charts.line) charts.line.destroy();
             charts.line = new Chart(document.getElementById('chart-line-monthly').getContext('2d'), {
                 type: 'line', data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [{ label: 'Hours', data: monthlyData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 }] },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                precision: 0,
-                                stepSize: 1
-                            }
-                        }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { stepSize: 1, precision: 0 } } } }
             });
         };
 
@@ -1862,7 +1372,7 @@
             }
         };
 
-        // --- STREAMING_CHUNK:Settings & App Initialization... ---
+        // --- SETTINGS ---
         const renderSettings = () => {
             document.getElementById('settings-daily-goal').value = state.settings.dailyGoal; document.getElementById('settings-weekly-goal').value = state.settings.weeklyGoal;
             document.getElementById('settings-exam-date').value = state.settings.examDate || ''; document.getElementById('settings-sound').checked = state.settings.soundEnabled;
@@ -1874,13 +1384,9 @@
             if(!currentUser) return;
             state.settings = {
                 dailyGoal: parseFloat(document.getElementById('settings-daily-goal').value), weeklyGoal: parseFloat(document.getElementById('settings-weekly-goal').value),
-                examDate: document.getElementById('settings-exam-date').value, soundEnabled: document.getElementById('settings-sound').checked,
-                name: document.getElementById('settings-name').value
+                examDate: document.getElementById('settings-exam-date').value, soundEnabled: document.getElementById('settings-sound').checked, name: document.getElementById('settings-name').value
             };
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile'), state.settings);
-                showToast("Settings saved", "success"); updateAllUI();
-            } catch(e) { showToast("Failed to save settings", "error"); }
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile'), state.settings); showToast("Settings saved", "success"); updateAllUI(); } catch(e) {}
         });
 
         window.onload = () => { lucide.createIcons(); initAuthFlow(); };
