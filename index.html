@@ -25,9 +25,10 @@
         }
     </script>
 
-    <!-- Chart.js & Icons -->
+    <!-- Chart.js, Icons & Three.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <style>
         body {
@@ -203,6 +204,11 @@
                         <span class="text-xs font-medium text-slate-300">Exam in: <span id="exam-countdown" class="text-white font-bold">Not Set</span></span>
                     </div>
 
+                    <!-- NEW TIME PASS BUTTON -->
+                    <button id="btn-timepass-trigger" class="hidden lg:flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-4 py-1.5 rounded-full font-medium transition shadow-lg shadow-indigo-500/30 text-sm">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Time Pass
+                    </button>
+
                     <button class="p-2 text-slate-400 hover:text-white transition-colors rounded-full hover:bg-slate-800" onclick="document.documentElement.classList.toggle('dark')">
                         <i data-lucide="sun-moon" class="w-5 h-5"></i>
                     </button>
@@ -348,7 +354,6 @@
                                     <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Subject / Topic</label>
                                     <select id="timer-subject" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-primary-500 outline-none appearance-none">
                                         <option value="General Study">General Study</option>
-                                        <!-- Dynamic Subjects injected here -->
                                     </select>
                                 </div>
                                 <div>
@@ -518,6 +523,10 @@
                                     <p class="text-slate-400 text-sm mt-1" id="settings-email">user@example.com</p>
                                 </div>
                             </div>
+                            <div class="flex items-center gap-3 mt-4">
+                                <input type="checkbox" id="settings-sound" class="w-4 h-4 text-primary-600 bg-slate-800 border-slate-700 rounded focus:ring-primary-500">
+                                <label for="settings-sound" class="text-sm text-slate-300">Enable Sound Effects</label>
+                            </div>
                         </div>
 
                         <div class="glass p-6 rounded-2xl">
@@ -646,6 +655,63 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- NEW TIME PASS OVERLAY -->
+    <div id="timepass-overlay" class="fixed inset-0 z-[100] hidden bg-[#020617] flex-col overflow-hidden">
+        
+        <!-- Hidden Premium Content (Behind the Canvas) -->
+        <div id="tp-hidden-content" class="absolute inset-0 z-0 flex items-center justify-center p-8 pointer-events-none">
+            <div class="glass w-full max-w-4xl h-full max-h-[80vh] rounded-[2rem] p-10 flex flex-col items-center justify-center text-center shadow-2xl border border-slate-700/50 relative overflow-hidden">
+                <!-- Background ambient glow -->
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-600/10 mix-blend-overlay"></div>
+                
+                <div class="w-24 h-24 bg-gradient-to-tr from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mb-8 shadow-[0_0_60px_rgba(99,102,241,0.6)] relative z-10">
+                    <i data-lucide="diamond" class="w-12 h-12 text-white"></i>
+                </div>
+                <h2 class="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 mb-6 tracking-tight relative z-10">Premium Unlocked</h2>
+                <p class="text-xl text-slate-400 max-w-2xl font-light leading-relaxed relative z-10">
+                    You have discovered the hidden layer. This space is reserved for moments of absolute clarity. Take a deep breath, clear your mind, and when you are ready, return to your studies.
+                </p>
+                
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl relative z-10">
+                    <div class="p-8 rounded-2xl bg-slate-900/60 border border-slate-700/50 backdrop-blur-sm">
+                        <i data-lucide="zap" class="w-10 h-10 text-yellow-400 mb-4 mx-auto drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]"></i>
+                        <div class="text-white font-bold text-xl mb-2">Deep Focus</div>
+                        <p class="text-xs text-slate-400">Eliminate all external noise.</p>
+                    </div>
+                    <div class="p-8 rounded-2xl bg-slate-900/60 border border-slate-700/50 backdrop-blur-sm">
+                        <i data-lucide="brain" class="w-10 h-10 text-purple-400 mb-4 mx-auto drop-shadow-[0_0_15px_rgba(192,132,252,0.5)]"></i>
+                        <div class="text-white font-bold text-xl mb-2">Mental Clarity</div>
+                        <p class="text-xs text-slate-400">Organize your chaotic thoughts.</p>
+                    </div>
+                    <div class="p-8 rounded-2xl bg-slate-900/60 border border-slate-700/50 backdrop-blur-sm">
+                        <i data-lucide="rocket" class="w-10 h-10 text-emerald-400 mb-4 mx-auto drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]"></i>
+                        <div class="text-white font-bold text-xl mb-2">Maximum Growth</div>
+                        <p class="text-xs text-slate-400">Push past your previous limits.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebGL Canvas Container -->
+        <div id="tp-canvas-container" class="absolute inset-0 z-10 cursor-crosshair"></div>
+
+        <!-- UI Overlays -->
+        <div class="absolute top-6 right-6 z-20 flex gap-4">
+            <button id="btn-tp-reset" class="px-5 py-2.5 glass rounded-full text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium flex items-center gap-2 shadow-lg">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset Cloth
+            </button>
+            <button id="btn-tp-exit" class="px-6 py-2.5 bg-white text-slate-900 hover:bg-slate-200 rounded-full transition font-bold flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                <i data-lucide="x" class="w-4 h-4"></i> Exit
+            </button>
+        </div>
+        
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none text-center">
+            <p class="text-slate-300 font-medium tracking-widest uppercase text-sm animate-pulse flex items-center gap-2 glass px-6 py-2 rounded-full">
+                <i data-lucide="mouse-pointer-2" class="w-4 h-4"></i> Click and drag to tear fabric
+            </p>
         </div>
     </div>
 
@@ -889,7 +955,7 @@
             
             if (mode === 'custom') {
                 const subject = document.getElementById('timer-subject').value;
-                const todayStr = new Date().toLocaleDateString('sv-SE'); // Safe formatting for ISO
+                const todayStr = new Date().toLocaleDateString('sv-SE'); 
                 const plannedTask = state.planner.find(t => t.date === todayStr && t.subject === subject);
                 
                 let hours = parseFloat(document.getElementById('timer-custom-hours').value) || 1;
@@ -936,7 +1002,6 @@
             }
         });
 
-        // Quick Custom Presets
         document.getElementById('preset-break-short').onclick = () => { document.getElementById('timer-custom-hours').value = 0.0833; TIMER_MODES['custom'] = 5*60; state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); };
         document.getElementById('preset-break-long').onclick = () => { document.getElementById('timer-custom-hours').value = 0.25; TIMER_MODES['custom'] = 15*60; state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); };
         document.getElementById('preset-focus-1h').onclick = () => { document.getElementById('timer-custom-hours').value = 1; TIMER_MODES['custom'] = 60*60; state.timer.timeLeft = TIMER_MODES['custom']; updateTimerUI(); };
@@ -952,7 +1017,7 @@
 
             document.getElementById('timer-custom-hours').value = hours; TIMER_MODES['custom'] = Math.floor(hours * 3600);
             switchTimerMode('custom'); showToast(`Ready to focus on ${subject} for ${hours}h!`, "info");
-            setTimeout(() => { window.startTimer(); }, 500); // Auto start
+            setTimeout(() => { window.startTimer(); }, 500);
         };
 
         const updateTimerFromTimestamp = () => {
@@ -1006,7 +1071,6 @@
             clearInterval(state.timer.interval); state.timer.isRunning = false; state.timer.startTime = null;
             document.getElementById('timer-start').classList.remove('hidden'); document.getElementById('timer-pause').classList.add('hidden');
             
-            // Auto resume if manually stopping a break
             if ((state.timer.mode === 'shortbreak' || state.timer.mode === 'longbreak') && state.timer.suspendedSession) {
                 showToast("Break stopped early. Resuming focus...", "info"); window.resumeSuspendedSession();
             }
@@ -1388,6 +1452,237 @@
             };
             try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'profile'), state.settings); showToast("Settings saved", "success"); updateAllUI(); } catch(e) {}
         });
+
+        // --- TIME PASS EXPERINCE LOGIC (THREE.JS CLOTH) ---
+        let tpInitialized = false;
+        let tpScene, tpCamera, tpRenderer, tpClothMesh, tpMaterial;
+        let tpAlphaCanvas, tpAlphaCtx, tpAlphaTex;
+        let tpIsDragging = false, tpLastUV = null;
+        let tpRaycaster, tpMouse;
+        let tpUniforms = { uTime: { value: 0 }, uMouse: { value: new THREE.Vector3(999, 999, 999) }, uTearTex: { value: null } };
+        let tpAnimationId;
+
+        const initTimePassApp = () => {
+            if(tpInitialized) { resetCloth(); return; }
+
+            const container = document.getElementById('tp-canvas-container');
+            
+            // 1. Setup Three.js Basics
+            tpScene = new THREE.Scene();
+            tpCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            tpCamera.position.z = 10;
+
+            tpRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            tpRenderer.setSize(window.innerWidth, window.innerHeight);
+            tpRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            tpRenderer.shadowMap.enabled = true;
+            container.appendChild(tpRenderer.domElement);
+
+            // 2. Setup Hidden Alpha Canvas for Tearing
+            tpAlphaCanvas = document.createElement('canvas');
+            tpAlphaCanvas.width = 1024; tpAlphaCanvas.height = 1024;
+            tpAlphaCtx = tpAlphaCanvas.getContext('2d');
+            tpAlphaCtx.fillStyle = 'white';
+            tpAlphaCtx.fillRect(0, 0, tpAlphaCanvas.width, tpAlphaCanvas.height);
+            
+            tpAlphaTex = new THREE.CanvasTexture(tpAlphaCanvas);
+            tpAlphaTex.minFilter = THREE.LinearFilter;
+            tpUniforms.uTearTex.value = tpAlphaTex;
+
+            // 3. Cinematic Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+            tpScene.add(ambientLight);
+
+            const spotLight = new THREE.SpotLight(0x818cf8, 1);
+            spotLight.position.set(5, 10, 10);
+            spotLight.angle = Math.PI / 4;
+            spotLight.penumbra = 0.5;
+            spotLight.castShadow = true;
+            tpScene.add(spotLight);
+
+            const fillLight = new THREE.DirectionalLight(0x4f46e5, 0.4);
+            fillLight.position.set(-5, 0, 5);
+            tpScene.add(fillLight);
+
+            // 4. Create Cloth Mesh with custom Vertex Shader modification
+            const dist = tpCamera.position.z;
+            const height = 2 * Math.tan(tpCamera.fov * Math.PI / 360) * dist;
+            const width = height * (window.innerWidth / window.innerHeight);
+            
+            const geometry = new THREE.PlaneGeometry(width * 1.5, height * 1.5, 150, 150);
+            
+            tpMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x1e293b,
+                emissive: 0x020617,
+                roughness: 0.7,
+                metalness: 0.2,
+                clearcoat: 0.1,
+                side: THREE.DoubleSide,
+                alphaMap: tpAlphaTex,
+                alphaTest: 0.5,
+                transparent: true
+            });
+
+            // The Magic: Custom Vertex Displacement & Edge Flutter
+            tpMaterial.onBeforeCompile = (shader) => {
+                shader.uniforms.uTime = tpUniforms.uTime;
+                shader.uniforms.uMouse = tpUniforms.uMouse;
+                shader.uniforms.uTearTex = tpUniforms.uTearTex;
+                
+                shader.vertexShader = `
+                    uniform float uTime;
+                    uniform vec3 uMouse;
+                    uniform sampler2D uTearTex;
+                    ${shader.vertexShader}
+                `.replace(
+                    `#include <begin_vertex>`,
+                    `#include <begin_vertex>
+                    
+                    // Base cloth waving
+                    float wave = sin(position.x * 1.5 + uTime * 2.0) * 0.2 
+                               + cos(position.y * 1.2 + uTime * 1.5) * 0.2;
+                    
+                    // Mouse repulsion force
+                    float dist = distance(position, uMouse);
+                    float force = max(0.0, 2.0 - dist) * 0.5;
+                    wave -= force;
+
+                    // Edge Physics Fluttering (reads the dynamic tear mask)
+                    float maskAlpha = texture2D(uTearTex, uv).r;
+                    if (maskAlpha < 0.95 && maskAlpha > 0.05) {
+                        // High frequency noise for torn edges
+                        wave += sin(uTime * 15.0 + position.x * 20.0 + position.y * 20.0) * 0.15;
+                    }
+
+                    transformed.z += wave;
+                    `
+                );
+            };
+
+            tpClothMesh = new THREE.Mesh(geometry, tpMaterial);
+            tpClothMesh.receiveShadow = true;
+            tpScene.add(tpClothMesh);
+
+            // 5. Interaction Setup
+            tpRaycaster = new THREE.Raycaster();
+            tpMouse = new THREE.Vector2();
+
+            container.addEventListener('mousedown', (e) => { tpIsDragging = true; executeTear(e, true); });
+            window.addEventListener('mouseup', () => { tpIsDragging = false; tpLastUV = null; tpUniforms.uMouse.value.set(999,999,999); });
+            container.addEventListener('mousemove', (e) => {
+                updateMouseRepulsion(e);
+                if (tpIsDragging) executeTear(e, false);
+            });
+
+            window.addEventListener('resize', onTPResize);
+            
+            tpInitialized = true;
+        };
+
+        const updateMouseRepulsion = (e) => {
+            const rect = tpRenderer.domElement.getBoundingClientRect();
+            tpMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            tpMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            tpRaycaster.setFromCamera(tpMouse, tpCamera);
+            const intersects = tpRaycaster.intersectObject(tpClothMesh);
+            if(intersects.length > 0) tpUniforms.uMouse.value.copy(intersects[0].point);
+            else tpUniforms.uMouse.value.set(999,999,999);
+        };
+
+        const executeTear = (e, isStart) => {
+            const rect = tpRenderer.domElement.getBoundingClientRect();
+            tpMouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            tpMouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            tpRaycaster.setFromCamera(tpMouse, tpCamera);
+            const intersects = tpRaycaster.intersectObject(tpClothMesh);
+            
+            if (intersects.length > 0) {
+                const uv = intersects[0].uv;
+                const x = uv.x * tpAlphaCanvas.width;
+                const y = (1 - uv.y) * tpAlphaCanvas.height; 
+
+                if (isStart || !tpLastUV) tpLastUV = { x, y };
+
+                tpAlphaCtx.globalCompositeOperation = 'destination-out';
+                
+                // Draw multiple erratic paths to simulate tearing instead of erasing
+                for(let i=0; i<3; i++) {
+                    tpAlphaCtx.beginPath();
+                    const startX = tpLastUV.x + (Math.random()-0.5)*15;
+                    const startY = tpLastUV.y + (Math.random()-0.5)*15;
+                    const endX = x + (Math.random()-0.5)*15;
+                    const endY = y + (Math.random()-0.5)*15;
+                    
+                    tpAlphaCtx.moveTo(startX, startY);
+                    tpAlphaCtx.lineTo(endX, endY);
+                    
+                    tpAlphaCtx.lineWidth = Math.random() * 25 + 5;
+                    tpAlphaCtx.lineCap = 'round';
+                    tpAlphaCtx.lineJoin = 'miter';
+                    tpAlphaCtx.miterLimit = 1;
+                    tpAlphaCtx.stroke();
+                }
+
+                tpAlphaTex.needsUpdate = true;
+                tpLastUV = { x, y };
+            }
+        };
+
+        const resetCloth = () => {
+            if(!tpInitialized) return;
+            tpAlphaCtx.globalCompositeOperation = 'source-over';
+            tpAlphaCtx.fillStyle = 'white';
+            tpAlphaCtx.fillRect(0, 0, tpAlphaCanvas.width, tpAlphaCanvas.height);
+            tpAlphaTex.needsUpdate = true;
+        };
+
+        const onTPResize = () => {
+            if(!tpInitialized) return;
+            tpCamera.aspect = window.innerWidth / window.innerHeight;
+            tpCamera.updateProjectionMatrix();
+            tpRenderer.setSize(window.innerWidth, window.innerHeight);
+            
+            const dist = tpCamera.position.z;
+            const height = 2 * Math.tan(tpCamera.fov * Math.PI / 360) * dist;
+            const width = height * tpCamera.aspect;
+            tpClothMesh.geometry.dispose();
+            tpClothMesh.geometry = new THREE.PlaneGeometry(width * 1.5, height * 1.5, 150, 150);
+        };
+
+        const renderTPLoop = (time) => {
+            if(!document.getElementById('timepass-overlay').classList.contains('hidden')) {
+                tpUniforms.uTime.value = time * 0.001;
+                tpRenderer.render(tpScene, tpCamera);
+                tpAnimationId = requestAnimationFrame(renderTPLoop);
+            }
+        };
+
+        // UI Binding for Time Pass
+        const overlay = document.getElementById('timepass-overlay');
+        document.getElementById('btn-timepass-trigger').addEventListener('click', () => {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            initTimePassApp();
+            resetCloth(); // Ensure it always starts fresh per prompt requirements
+            tpAnimationId = requestAnimationFrame(renderTPLoop);
+        });
+
+        document.getElementById('btn-tp-exit').addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+            cancelAnimationFrame(tpAnimationId);
+            resetCloth();
+        });
+
+        document.getElementById('btn-tp-reset').addEventListener('click', resetCloth);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !overlay.classList.contains('hidden')) {
+                document.getElementById('btn-tp-exit').click();
+            }
+        });
+
 
         window.onload = () => { lucide.createIcons(); initAuthFlow(); };
     </script>
